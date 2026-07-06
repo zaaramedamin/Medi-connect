@@ -1,0 +1,66 @@
+@import "tailwindcss";
+
+@theme {
+  /* MediConnect design tokens — medical teal-green palette */
+  --color-primary: hsl(168, 76%, 36%);
+  --color-primary-foreground: hsl(0, 0%, 100%);
+  --color-secondary: hsl(214, 32%, 91%);
+  --color-secondary-foreground: hsl(222, 47%, 11%);
+  --color-muted: hsl(210, 40%, 96%);
+  --color-muted-foreground: hsl(215, 16%, 47%);
+  --color-accent: hsl(189, 94%, 30%);
+  --color-accent-foreground: hsl(0, 0%, 100%);
+  --color-destructive: hsl(0, 84%, 60%);
+  --color-destructive-foreground: hsl(210, 40%, 98%);
+  --color-border: hsl(214, 32%, 91%);
+  --color-input: hsl(214, 32%, 91%);
+  --color-ring: hsl(168, 76%, 36%);
+  --color-background: hsl(0, 0%, 100%);
+  --color-foreground: hsl(222, 84%, 5%);
+  --color-card: hsl(0, 0%, 100%);
+  --color-card-foreground: hsl(222, 84%, 5%);
+  --radius: 0.625rem;
+
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+
+  --animate-fade-in: fade-in 0.3s ease-out;
+  --animate-spin: spin 1s linear infinite;
+
+  @keyframes fade-in {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
+  }
+}
+
+/* Dark mode tokens */
+.dark {
+  --color-background: hsl(222, 84%, 5%);
+  --color-foreground: hsl(210, 40%, 98%);
+  --color-card: hsl(222, 84%, 5%);
+  --color-card-foreground: hsl(210, 40%, 98%);
+  --color-primary: hsl(189, 94%, 43%);
+  --color-primary-foreground: hsl(222, 47%, 11%);
+  --color-secondary: hsl(217, 33%, 17%);
+  --color-secondary-foreground: hsl(210, 40%, 98%);
+  --color-muted: hsl(217, 33%, 17%);
+  --color-muted-foreground: hsl(215, 20%, 65%);
+  --color-accent: hsl(189, 94%, 40%);
+  --color-accent-foreground: hsl(210, 40%, 98%);
+  --color-border: hsl(217, 33%, 17%);
+  --color-input: hsl(217, 33%, 17%);
+}
+
+* {
+  border-color: var(--color-border);
+}
+
+body {
+  background-color: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
