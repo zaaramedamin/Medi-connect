@@ -60,7 +60,7 @@ SUPABASE_BUCKET=doctor-photos
 CLIENT_ORIGIN=http://localhost:5173
 RESEND_API_KEY=re_xxxxxxxxxxxxxxxxxxxx
 SENDER_EMAIL=noreply@yourdomain.com
-PORT=3000
+PORT=3001
 ```
 
 Create `client/.env.local`:
@@ -78,7 +78,7 @@ npm run dev
 ```
 
 - Client → http://localhost:5173
-- Server → http://localhost:3000
+- Server → http://localhost:3001
 
 ---
 

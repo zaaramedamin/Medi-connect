@@ -3,13 +3,13 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useRef } from 'react';
-import { User, CalendarDays, Save, Trash2, Upload } from 'lucide-react';
+import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount } from '@/services/api';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { formatDate, formatTime, cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -26,7 +26,8 @@ const profileSchema = z.object({
   avg_consultation_time: z.coerce.number().int().min(10).max(240).optional(),
 });
 
-type ProfileForm = z.infer<typeof profileSchema>;
+type ProfileFormInput = z.input<typeof profileSchema>;
+type ProfileForm = z.output<typeof profileSchema>;
 
 type Tab = 'profile' | 'appointments';
 
@@ -43,6 +44,11 @@ export default function DoctorDashboard() {
   const { data: appointments, isLoading: aptsLoading } = useQuery({
     queryKey: ['appointments', 'doctor'],
     queryFn: getDoctorAppointments,
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: completeAppointment,
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments', 'doctor'] }),
   });
 
   const profileMutation = useMutation({
@@ -66,7 +72,7 @@ export default function DoctorDashboard() {
     onSuccess: async () => { await signOut(); navigate('/'); },
   });
 
-  const { register, handleSubmit, formState: { errors, isDirty } } = useForm<ProfileForm>({
+  const { register, handleSubmit, formState: { errors, isDirty } } = useForm<ProfileFormInput, unknown, ProfileForm>({
     resolver: zodResolver(profileSchema),
     defaultValues: { name: user?.user_metadata?.name ?? '' },
   });
@@ -115,10 +121,12 @@ export default function DoctorDashboard() {
           {/* Photo */}
           <Card>
             <CardContent className="p-6 flex items-center gap-4">
-              <Avatar className="h-20 w-20">
+              <Avatar className="h-20 w-20 ring-2 ring-secondary">
                 {photoPreview
                   ? <img src={photoPreview} className="h-full w-full rounded-full object-cover" alt="Preview" />
-                  : <AvatarFallback className="text-2xl bg-primary/10 text-primary font-bold">{initials}</AvatarFallback>
+                  : user?.user_metadata?.avatar_url
+                    ? <img src={user.user_metadata.avatar_url} className="h-full w-full rounded-full object-cover" alt="Profile" />
+                    : <AvatarFallback className="text-2xl bg-secondary text-secondary-foreground font-bold">{initials}</AvatarFallback>
                 }
               </Avatar>
               <div>
@@ -183,27 +191,49 @@ export default function DoctorDashboard() {
           ) : !appointments?.length ? (
             <div className="text-center py-16 text-muted-foreground">
               <CalendarDays className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>No upcoming appointments</p>
+              <p>No appointments yet</p>
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border">
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40">
-                  <tr>{['Patient', 'Date', 'Time', 'Payment', 'Status'].map(h => <th key={h} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>)}</tr>
+                  <tr>{['Patient', 'Date', 'Time', 'Payment', 'Status', ''].map((h, i) => <th key={i} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y">
-                  {appointments.map(apt => (
-                    <tr key={apt.id} className="hover:bg-muted/20 transition-colors">
-                      <td className="px-4 py-3">
-                        <p className="font-medium">{apt.patient_name}</p>
-                        <p className="text-xs text-muted-foreground">{apt.patient_email}</p>
-                      </td>
-                      <td className="px-4 py-3">{formatDate(apt.time_slot)}</td>
-                      <td className="px-4 py-3">{formatTime(apt.time_slot)}</td>
-                      <td className="px-4 py-3 capitalize">{apt.payment_method}</td>
-                      <td className="px-4 py-3"><Badge variant={apt.status === 'confirmed' ? 'success' : 'secondary'} className="capitalize">{apt.status}</Badge></td>
-                    </tr>
-                  ))}
+                  {appointments.map(apt => {
+                    const isPast = new Date(apt.time_slot) < new Date();
+                    const canComplete = apt.status === 'confirmed' && isPast;
+                    return (
+                      <tr key={apt.id} className="hover:bg-muted/20 transition-colors">
+                        <td className="px-4 py-3">
+                          <p className="font-medium">{apt.patient_name}</p>
+                          <p className="text-xs text-muted-foreground">{apt.patient_email}</p>
+                        </td>
+                        <td className="px-4 py-3">{formatDate(apt.time_slot)}</td>
+                        <td className="px-4 py-3">{formatTime(apt.time_slot)}</td>
+                        <td className="px-4 py-3 capitalize">{apt.payment_method}</td>
+                        <td className="px-4 py-3">
+                          <Badge
+                            variant={apt.status === 'confirmed' ? 'success' : apt.status === 'cancelled' ? 'destructive' : 'secondary'}
+                            className="capitalize"
+                          >
+                            {apt.status}
+                          </Badge>
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          {canComplete && (
+                            <Button
+                              size="sm" variant="outline"
+                              onClick={() => completeMutation.mutate(apt.id)}
+                              disabled={completeMutation.isPending}
+                            >
+                              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark completed
+                            </Button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

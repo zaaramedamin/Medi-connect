@@ -11,7 +11,19 @@ export interface Doctor {
   working_hours_start: string | null;
   working_hours_end: string | null;
   avg_consultation_time: number | null;
+  lat?: number | null;
+  lng?: number | null;
+  avg_rating?: number;
+  review_count?: number;
   created_at?: string;
+}
+
+export interface Review {
+  id: number;
+  rating: number;
+  comment: string | null;
+  created_at: string;
+  patient_name: string;
 }
 
 export interface Appointment {
@@ -31,4 +43,26 @@ export interface TimeSlot {
   available: boolean;
 }
 
-export type UserRole = 'patient' | 'doctor';
+export type UserRole = 'patient' | 'doctor' | 'admin';
+
+export interface AdminDoctor {
+  id: string;
+  name: string;
+  specialty: string | null;
+  location: string | null;
+  cost: number | null;
+  photos_url: string | null;
+  subscription_status: 'active' | 'inactive' | 'expired';
+  subscription_expires: string | null;
+  created_at: string;
+}
+
+export interface NewDoctorInput {
+  email: string;
+  password: string;
+  name: string;
+  specialty?: string;
+  location?: string;
+  cost?: number;
+  activate?: boolean;
+}

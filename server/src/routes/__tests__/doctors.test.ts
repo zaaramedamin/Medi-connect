@@ -35,8 +35,11 @@ describe('GET /api/doctors/search', () => {
       select: jest.fn().mockReturnThis(),
       order: orderMock,
       limit: limitMock,
+      eq: jest.fn().mockReturnThis(),
       or: jest.fn().mockReturnThis(),
       ilike: jest.fn().mockReturnThis(),
+      // rating summary lookup: .select(...).in(...)
+      in: jest.fn().mockResolvedValue({ data: [], error: null }),
     };
     mockFrom.mockReturnValue(fromMock);
 
@@ -44,6 +47,7 @@ describe('GET /api/doctors/search', () => {
     const res = await request(app).get('/api/doctors/search?q=Smith');
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body[0]).toHaveProperty('avg_rating');
   });
 });
 

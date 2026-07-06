@@ -37,10 +37,12 @@ export interface TimeSlot {
   available: boolean;
 }
 
+export type Role = 'patient' | 'doctor' | 'admin';
+
 export interface AuthUser {
   id: string;
   email: string;
-  role: 'patient' | 'doctor';
+  role: Role;
 }
 
 // Augment Express Request with our user type

@@ -1,11 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, MapPin, Clock, Search } from 'lucide-react';
+import { CalendarDays, MapPin, Clock, Search, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { getMyAppointments, cancelAppointment } from '@/services/api';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { StarInput } from '@/components/ui/star-rating';
+import { getMyAppointments, cancelAppointment, createReview } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { formatDate, formatTime } from '@/lib/utils';
 
@@ -30,14 +33,22 @@ export default function PatientDashboard() {
   });
 
   const userName = user?.user_metadata?.name ?? 'Patient';
+  const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
+  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
   const upcoming = appointments?.filter(a => a.status === 'confirmed' && new Date(a.time_slot) > new Date());
   const past = appointments?.filter(a => a.status !== 'confirmed' || new Date(a.time_slot) <= new Date());
 
   return (
     <div className="container py-8 max-w-4xl">
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold">Hello, {userName}</h1>
-        <p className="text-muted-foreground">Manage your appointments</p>
+      <div className="mb-8 flex items-center gap-4">
+        <Avatar className="h-14 w-14 ring-2 ring-secondary">
+          {avatarUrl && <AvatarImage src={avatarUrl} alt={userName} />}
+          <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">{userInitials}</AvatarFallback>
+        </Avatar>
+        <div>
+          <h1 className="text-2xl font-bold">Hello, {userName}</h1>
+          <p className="text-muted-foreground">Manage your appointments</p>
+        </div>
       </div>
 
       {isLoading ? (
@@ -90,6 +101,21 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
   const doc = apt.doctors;
   const initials = doc?.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() ?? '??';
 
+  const queryClient = useQueryClient();
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const [rating, setRating] = useState(0);
+  const [comment, setComment] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+
+  const reviewMutation = useMutation({
+    mutationFn: () => createReview(doc!.id, rating, comment),
+    onSuccess: () => {
+      setSubmitted(true);
+      queryClient.invalidateQueries({ queryKey: ['doctor', doc?.id, 'reviews'] });
+      setTimeout(() => setReviewOpen(false), 1200);
+    },
+  });
+
   return (
     <Card>
       <CardContent className="p-5 flex flex-col sm:flex-row gap-4">
@@ -118,7 +144,58 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
             {cancelling ? 'Cancelling...' : 'Cancel'}
           </Button>
         )}
+
+        {apt.status === 'completed' && doc && (
+          <Button variant="outline" size="sm" onClick={() => setReviewOpen(true)} className="shrink-0 self-center">
+            <Star className="h-4 w-4 mr-1.5" />Leave a review
+          </Button>
+        )}
       </CardContent>
+
+      {/* Review dialog */}
+      <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Review {doc?.name}</DialogTitle>
+            <DialogDescription>Share your experience to help other patients.</DialogDescription>
+          </DialogHeader>
+
+          {submitted ? (
+            <p className="py-6 text-center text-sm font-medium text-accent">Thanks — your review was submitted!</p>
+          ) : (
+            <div className="space-y-4">
+              <div className="flex flex-col items-center gap-2">
+                <StarInput value={rating} onChange={setRating} />
+                <span className="text-xs text-muted-foreground">{rating > 0 ? `${rating} / 5` : 'Tap to rate'}</span>
+              </div>
+
+              <textarea
+                value={comment}
+                onChange={e => setComment(e.target.value)}
+                placeholder="What was your experience like? (optional)"
+                rows={4}
+                maxLength={1000}
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              />
+
+              {reviewMutation.isError && (
+                <p className="text-sm text-destructive">{(reviewMutation.error as Error).message}</p>
+              )}
+
+              <div className="flex gap-2">
+                <Button variant="outline" className="flex-1" onClick={() => setReviewOpen(false)}>Cancel</Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => reviewMutation.mutate()}
+                  disabled={rating === 0 || reviewMutation.isPending}
+                >
+                  {reviewMutation.isPending ? 'Submitting...' : 'Submit review'}
+                </Button>
+              </div>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

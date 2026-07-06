@@ -33,7 +33,7 @@ export default function Login() {
       return;
     }
     const role = useAuthStore.getState().role;
-    navigate(role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard');
+    navigate(role === 'admin' ? '/admin' : role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard');
   };
 
   return (

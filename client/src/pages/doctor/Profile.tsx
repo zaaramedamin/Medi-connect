@@ -1,13 +1,14 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
-import { MapPin, Clock, DollarSign, Calendar } from 'lucide-react';
+import { MapPin, Clock, DollarSign, Calendar, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { StarRating } from '@/components/ui/star-rating';
 import { BookingCalendar } from '@/components/features/BookingCalendar';
-import { getDoctor, bookAppointment } from '@/services/api';
+import { getDoctor, getDoctorReviews, bookAppointment } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { formatDate, formatTime } from '@/lib/utils';
 
@@ -23,6 +24,12 @@ export default function DoctorProfile() {
   const { data: doctor, isLoading } = useQuery({
     queryKey: ['doctor', id],
     queryFn: () => getDoctor(id!),
+    enabled: !!id,
+  });
+
+  const { data: reviews } = useQuery({
+    queryKey: ['doctor', id, 'reviews'],
+    queryFn: () => getDoctorReviews(id!),
     enabled: !!id,
   });
 
@@ -55,7 +62,10 @@ export default function DoctorProfile() {
         </Avatar>
         <div className="flex-1">
           <h1 className="text-2xl font-bold">{doctor.name}</h1>
-          {doctor.specialty && <Badge variant="secondary" className="mt-1">{doctor.specialty}</Badge>}
+          <div className="flex items-center gap-3 mt-1.5 flex-wrap">
+            {doctor.specialty && <Badge variant="secondary">{doctor.specialty}</Badge>}
+            <StarRating value={doctor.avg_rating ?? 0} count={doctor.review_count} size={16} />
+          </div>
           <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
             {doctor.location && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{doctor.location}</span>}
             {doctor.avg_consultation_time && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{doctor.avg_consultation_time} min</span>}
@@ -75,6 +85,40 @@ export default function DoctorProfile() {
           <BookingCalendar doctorId={id!} onSelectSlot={handleSlotSelect} />
         ) : (
           <p className="text-muted-foreground text-sm">This doctor hasn't set their schedule yet.</p>
+        )}
+      </div>
+
+      {/* Reviews */}
+      <div className="rounded-xl border bg-card p-6 mt-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="font-semibold text-lg flex items-center gap-2">
+            <MessageSquare className="h-5 w-5 text-primary" />
+            Patient reviews
+          </h2>
+          {doctor.review_count ? (
+            <StarRating value={doctor.avg_rating ?? 0} count={doctor.review_count} size={16} />
+          ) : null}
+        </div>
+
+        {reviews && reviews.length > 0 ? (
+          <ul className="space-y-4">
+            {reviews.map(r => (
+              <li key={r.id} className="border-b last:border-b-0 pb-4 last:pb-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-xs font-bold">
+                      {r.patient_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                    </span>
+                    <span className="text-sm font-semibold">{r.patient_name}</span>
+                  </div>
+                  <StarRating value={r.rating} size={13} showValue={false} />
+                </div>
+                {r.comment && <p className="text-sm text-muted-foreground mt-2 pl-10">{r.comment}</p>}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-muted-foreground text-sm">No reviews yet — be the first after your visit.</p>
         )}
       </div>
 

@@ -7,6 +7,47 @@ import { generateTimeSlots, buildAvailableSlots } from '../services/appointmentS
 
 const router = Router();
 
+interface DoctorRow {
+  id: string;
+  [key: string]: unknown;
+}
+
+// Merge average rating + review count into a list of doctor rows
+async function attachRatings<T extends DoctorRow>(doctors: T[]): Promise<(T & { avg_rating: number; review_count: number })[]> {
+  if (doctors.length === 0) return [];
+  const ids = doctors.map(d => d.id);
+  const { data: summaries } = await supabaseAdmin
+    .from('doctor_rating_summary')
+    .select('doctor_id, avg_rating, review_count')
+    .in('doctor_id', ids);
+
+  const map = new Map((summaries ?? []).map(s => [s.doctor_id, s]));
+  return doctors.map(d => ({
+    ...d,
+    avg_rating: Number(map.get(d.id)?.avg_rating ?? 0),
+    review_count: Number(map.get(d.id)?.review_count ?? 0),
+  }));
+}
+
+// Merge lat/lng into doctor rows. Resilient: if the columns don't exist yet
+// (map migration not run), doctors are returned unchanged instead of erroring.
+async function attachCoords<T extends DoctorRow>(doctors: T[]): Promise<T[]> {
+  if (doctors.length === 0) return doctors;
+  const ids = doctors.map(d => d.id);
+  const { data, error } = await supabaseAdmin
+    .from('doctors')
+    .select('id, lat, lng')
+    .in('id', ids);
+
+  if (error) return doctors;
+  const map = new Map((data ?? []).map(r => [r.id, r]));
+  return doctors.map(d => ({
+    ...d,
+    lat: map.get(d.id)?.lat ?? null,
+    lng: map.get(d.id)?.lng ?? null,
+  }));
+}
+
 // GET /api/doctors/search?q=&specialty=&location=
 router.get('/search', async (req, res) => {
   const { q = '', specialty, location } = req.query as Record<string, string>;
@@ -14,6 +55,8 @@ router.get('/search', async (req, res) => {
   let queryBuilder = supabaseAdmin
     .from('doctors')
     .select('id, name, specialty, location, description, photos_url, cost, avg_consultation_time')
+    // Only doctors with an active subscription are listed to patients
+    .eq('subscription_status', 'active')
     .order('name');
 
   if (q) {
@@ -25,7 +68,7 @@ router.get('/search', async (req, res) => {
   const { data, error } = await queryBuilder.limit(20);
   if (error) return res.status(500).json({ error: 'Failed to search doctors' });
 
-  res.json(data);
+  res.json(await attachCoords(await attachRatings(data ?? [])));
 });
 
 // GET /api/doctors/:id
@@ -37,7 +80,27 @@ router.get('/:id', async (req, res) => {
     .single();
 
   if (error || !data) return res.status(404).json({ error: 'Doctor not found' });
-  res.json(data);
+
+  const [{ data: summary }, coords] = await Promise.all([
+    supabaseAdmin
+      .from('doctor_rating_summary')
+      .select('avg_rating, review_count')
+      .eq('doctor_id', req.params.id)
+      .maybeSingle(),
+    supabaseAdmin
+      .from('doctors')
+      .select('lat, lng')
+      .eq('id', req.params.id)
+      .maybeSingle(),
+  ]);
+
+  res.json({
+    ...data,
+    avg_rating: Number(summary?.avg_rating ?? 0),
+    review_count: Number(summary?.review_count ?? 0),
+    lat: coords.data?.lat ?? null,
+    lng: coords.data?.lng ?? null,
+  });
 });
 
 // GET /api/doctors/:id/slots?date=YYYY-MM-DD

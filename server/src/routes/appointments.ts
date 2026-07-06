@@ -86,14 +86,13 @@ router.get('/my', requireAuth, requireRole('patient'), async (req, res) => {
   res.json(data);
 });
 
-// GET /api/appointments/doctor — doctor's upcoming appointments
+// GET /api/appointments/doctor — all of the doctor's appointments (newest first)
 router.get('/doctor', requireAuth, requireRole('doctor'), async (req, res) => {
   const { data, error } = await supabaseAdmin
     .from('appointments')
     .select('id, time_slot, status, payment_method, payment_status, user_id')
     .eq('doctor_id', req.user!.id)
-    .gte('time_slot', new Date().toISOString())
-    .order('time_slot', { ascending: true });
+    .order('time_slot', { ascending: false });
 
   if (error) return res.status(500).json({ error: 'Failed to fetch appointments' });
 
@@ -135,6 +134,34 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
     .single();
 
   if (error) return res.status(500).json({ error: 'Failed to cancel appointment' });
+  res.json(data);
+});
+
+// PATCH /api/appointments/:id/complete — doctor marks a past visit as completed
+router.patch('/:id/complete', requireAuth, requireRole('doctor'), async (req, res) => {
+  const { data: existing } = await supabaseAdmin
+    .from('appointments')
+    .select('doctor_id, status, time_slot')
+    .eq('id', req.params.id)
+    .single();
+
+  if (!existing) return res.status(404).json({ error: 'Appointment not found' });
+  if (existing.doctor_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
+  if (existing.status !== 'confirmed') {
+    return res.status(400).json({ error: 'Only confirmed appointments can be completed' });
+  }
+  if (new Date(existing.time_slot) > new Date()) {
+    return res.status(400).json({ error: 'This appointment has not taken place yet' });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('appointments')
+    .update({ status: 'completed' })
+    .eq('id', req.params.id)
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: 'Failed to complete appointment' });
   res.json(data);
 });
 

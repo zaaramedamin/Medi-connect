@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -6,6 +7,9 @@ import { apiRateLimit } from './middleware/rateLimit';
 import doctorRoutes from './routes/doctors';
 import appointmentRoutes from './routes/appointments';
 import uploadRoutes from './routes/uploads';
+import reviewRoutes from './routes/reviews';
+import adminRoutes from './routes/admin';
+import { processReminders } from './services/reminderService';
 
 const app = express();
 
@@ -52,6 +56,8 @@ app.use('/api', apiRateLimit);
 app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/reviews', reviewRoutes);
+app.use('/api/admin', adminRoutes);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
@@ -68,6 +74,11 @@ app.use((err: Error, _req: express.Request, res: express.Response, _next: expres
 const PORT = process.env.PORT ?? 3000;
 app.listen(PORT, () => {
   console.log(`MediConnect API running on port ${PORT}`);
+
+  // Appointment reminders: check once on boot, then every 15 minutes.
+  // No-ops until a real RESEND_API_KEY is set. Deduped via reminder_logs.
+  processReminders();
+  setInterval(processReminders, 15 * 60 * 1000);
 });
 
 export default app;
