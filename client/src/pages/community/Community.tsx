@@ -33,11 +33,20 @@ export default function Community() {
 
   return (
     <div className="animate-fade-in">
-      {/* Header */}
+      {/* Header — animated wave background with a slow cinematic drift */}
       <section className="relative overflow-hidden border-b">
         <div aria-hidden className="absolute inset-0">
-          <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-accent/10" />
-          <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-primary/15 blur-3xl" />
+          <img
+            src="/backgrounds/insights-hero.webp"
+            alt=""
+            draggable={false}
+            className="h-full w-full object-cover animate-bg-drift motion-reduce:animate-none"
+          />
+          {/* Readability overlays: soft left-to-right wash + dark-mode dimming */}
+          <div className="absolute inset-0 bg-linear-to-r from-background/85 via-background/45 to-transparent dark:from-background/95 dark:via-background/75 dark:to-background/40" />
+          {/* Extra drifting glows so the light itself feels alive */}
+          <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-primary/20 blur-3xl animate-aurora" />
+          <div className="absolute -bottom-28 right-0 h-80 w-80 rounded-full bg-accent/20 blur-3xl animate-aurora-slow" />
         </div>
         <div className="container relative flex flex-col gap-6 py-12 md:flex-row md:items-end md:justify-between md:py-16">
           <BlurFade>

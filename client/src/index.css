@@ -34,6 +34,7 @@
   --animate-aurora-slow: aurora 20s ease-in-out 2s infinite alternate-reverse;
   --animate-word-in: word-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
   --animate-blink: blink 1.1s step-end infinite;
+  --animate-bg-drift: bg-drift 26s ease-in-out infinite alternate;
 
   @keyframes fade-in {
     from { opacity: 0; transform: translateY(8px); }
@@ -72,6 +73,12 @@
   @keyframes blink {
     0%, 100% { opacity: 1; }
     50% { opacity: 0; }
+  }
+
+  /* Slow cinematic pan/zoom for photographic hero backgrounds */
+  @keyframes bg-drift {
+    from { transform: scale(1.06) translate(0, 0); }
+    to { transform: scale(1.18) translate(-2.5%, 2%); }
   }
 }
 
