@@ -108,3 +108,28 @@ export interface NewArticleInput {
   body: string;
   cover_image?: string;
 }
+
+// ── Admin analytics & management ─────────────────────────────────────
+export interface AdminStats {
+  totals: {
+    doctors: number;
+    activeDoctors: number;
+    patients: number;
+    appointments: number;
+    completed: number;
+    upcoming: number;
+  };
+  revenue: { consultation: number; subscription: number; total: number };
+  topDoctors: { id: string; name: string; specialty: string | null; reservations: number; revenue: number }[];
+  hourly: { hour: number; count: number }[];
+  peakHour: { hour: number; count: number };
+  weekday: number[];
+}
+
+export interface AdminPatient {
+  id: string;
+  name: string;
+  email: string;
+  created_at: string;
+  appointments: number;
+}

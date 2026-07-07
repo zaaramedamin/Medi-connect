@@ -40,7 +40,7 @@ export function ProductCard({ product, onQuickView, compact = false }: ProductCa
       onMouseEnter={startHover}
       onMouseLeave={clearHover}
       className={cn(
-        'group relative flex flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5',
+        'group/card relative flex flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5',
         compact ? 'w-54 shrink-0' : 'h-full'
       )}
     >
@@ -50,7 +50,7 @@ export function ProductCard({ product, onQuickView, compact = false }: ProductCa
           alt={product.name}
           loading="lazy"
           draggable={false}
-          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover/card:scale-105"
         />
         {product.tag && (
           <span className="absolute left-2.5 top-2.5 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-semibold text-primary shadow-sm backdrop-blur">
@@ -61,7 +61,7 @@ export function ProductCard({ product, onQuickView, compact = false }: ProductCa
         {/* Quick-view button (immediate; also the touch fallback) */}
         <button
           onClick={() => onQuickView(product)}
-          className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-sm backdrop-blur transition-opacity duration-200 hover:bg-background group-hover:opacity-100"
+          className="absolute right-2.5 top-2.5 flex h-8 w-8 items-center justify-center rounded-full bg-background/90 text-foreground opacity-0 shadow-sm backdrop-blur transition-opacity duration-200 hover:bg-background group-hover/card:opacity-100"
           aria-label={`Quick view ${product.name}`}
         >
           <Eye className="h-4 w-4" />
@@ -70,7 +70,7 @@ export function ProductCard({ product, onQuickView, compact = false }: ProductCa
         {/* Hover-hold progress: fills over 2s, matching the preview timer */}
         <span
           aria-hidden
-          className="absolute inset-x-0 bottom-0 h-0.5 origin-left scale-x-0 bg-primary transition-transform duration-[2000ms] ease-linear group-hover:scale-x-100"
+          className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-primary transition-transform duration-2000 ease-linear group-hover/card:scale-x-100"
         />
       </div>
 

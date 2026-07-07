@@ -1,12 +1,19 @@
-import { Router } from 'express';
+import { Router, Request, Response, NextFunction } from 'express';
 import { body } from 'express-validator';
 import { supabaseAdmin } from '../config/supabase';
-import { requireAuth, requireRole } from '../middleware/auth';
+import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 
 const router = Router();
 
 const CATEGORIES = ['report', 'advice', 'discussion'];
+
+// Posts may be written by doctors or admins.
+function requireDoctorOrAdmin(req: Request, res: Response, next: NextFunction) {
+  if (!req.user) return res.status(401).json({ error: 'Unauthorized' });
+  if (req.user.role === 'doctor' || req.user.role === 'admin') return next();
+  return res.status(403).json({ error: 'Forbidden' });
+}
 
 interface AuthorInfo {
   name: string;
@@ -28,6 +35,21 @@ async function getAuthors(ids: string[]): Promise<Record<string, AuthorInfo>> {
   for (const d of data ?? []) {
     map[d.id] = { name: d.name, specialty: d.specialty, photos_url: d.photos_url };
   }
+
+  // Authors not in the doctors table (e.g. an admin) — read their auth profile.
+  const missing = unique.filter(id => !map[id]);
+  await Promise.all(
+    missing.map(async id => {
+      const { data: u } = await supabaseAdmin.auth.admin.getUserById(id);
+      const meta = u.user?.user_metadata ?? {};
+      map[id] = {
+        name: (meta.name as string) ?? 'MediConnect Team',
+        specialty: meta.role === 'admin' ? 'MediConnect' : null,
+        photos_url: null,
+      };
+    })
+  );
+
   return map;
 }
 
@@ -108,7 +130,7 @@ router.get('/:id', async (req, res) => {
 router.post(
   '/',
   requireAuth,
-  requireRole('doctor'),
+  requireDoctorOrAdmin,
   validate([
     body('title').notEmpty().trim().isLength({ max: 160 }),
     body('body').notEmpty().trim().isLength({ max: 8000 }),

@@ -14,5 +14,15 @@ export const ARTICLE_FILTERS = [
   { value: 'discussion', label: 'Discussion' },
 ] as const;
 
+// Real photo used when an article has no cover of its own (per category).
+export const ARTICLE_DEFAULT_COVER: Record<ArticleCategory, string> = {
+  report: '/articles/default-report.jpg',
+  advice: '/articles/default-advice.jpg',
+  discussion: '/articles/default-discussion.jpg',
+};
+
+export const articleCover = (a: { cover_image: string | null; category: ArticleCategory }) =>
+  a.cover_image || ARTICLE_DEFAULT_COVER[a.category];
+
 export const formatArticleDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });

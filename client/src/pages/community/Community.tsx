@@ -49,7 +49,7 @@ export default function Community() {
               Public health reports and practical advice from our doctors — and a space for them to share and discuss.
             </p>
           </BlurFade>
-          {role === 'doctor' && (
+          {(role === 'doctor' || role === 'admin') && (
             <BlurFade delay={0.1}>
               <Button asChild>
                 <Link to="/community/new"><PenSquare className="mr-1.5 h-4 w-4" /> Write an article</Link>

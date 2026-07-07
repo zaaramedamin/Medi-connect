@@ -33,11 +33,14 @@ function Spinner() {
   );
 }
 
-function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: 'patient' | 'doctor' | 'admin' }) {
+type Role = 'patient' | 'doctor' | 'admin';
+
+function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: Role | Role[] }) {
   const { user, role: userRole, loading } = useAuthStore();
   if (loading) return <Spinner />;
   if (!user) return <Navigate to="/login" replace />;
-  if (role && userRole !== role) return <Navigate to="/" replace />;
+  const allowed = role == null || (Array.isArray(role) ? role : [role]).includes(userRole as Role);
+  if (!allowed) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -68,7 +71,7 @@ function AppRoutes() {
                 <Route path="/community" element={<Community />} />
                 <Route
                   path="/community/new"
-                  element={<ProtectedRoute role="doctor"><NewArticle /></ProtectedRoute>}
+                  element={<ProtectedRoute role={['doctor', 'admin']}><NewArticle /></ProtectedRoute>}
                 />
                 <Route path="/community/:id" element={<CommunityArticle />} />
                 <Route path="/doctor/:id" element={<DoctorProfile />} />

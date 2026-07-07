@@ -5,7 +5,7 @@ import { ArrowLeft, MessageCircle, Send, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlurFade } from '@/components/ui/blur-fade';
 import { AuthorAvatar } from '@/components/features/ArticleCard';
-import { ARTICLE_CATEGORY_META, formatArticleDate } from '@/data/articleMeta';
+import { ARTICLE_CATEGORY_META, articleCover, formatArticleDate } from '@/data/articleMeta';
 import { getArticle, addArticleComment, deleteArticle } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { cn } from '@/lib/utils';
@@ -102,9 +102,8 @@ export default function Article() {
           </div>
         </BlurFade>
 
-        {article.cover_image && (
-          <img src={article.cover_image} alt="" className="mt-6 aspect-video w-full rounded-2xl border object-cover" />
-        )}
+        <img src={articleCover(article)} alt="" className="mt-6 aspect-video w-full rounded-2xl border object-cover" />
+
 
         <div className="mt-8 space-y-4 text-[15px] leading-relaxed text-foreground/90">
           {paragraphs.map((p, i) => <p key={i}>{p}</p>)}

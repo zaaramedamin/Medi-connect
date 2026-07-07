@@ -7,7 +7,8 @@
 -- ─────────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS articles (
   id BIGSERIAL PRIMARY KEY,
-  author_id UUID NOT NULL REFERENCES doctors(id) ON DELETE CASCADE,
+  -- References auth.users so both doctors and admins can author posts.
+  author_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
   title TEXT NOT NULL,
   category TEXT NOT NULL DEFAULT 'advice' CHECK (category IN ('report', 'advice', 'discussion')),
   excerpt TEXT,
@@ -29,6 +30,12 @@ CREATE TABLE IF NOT EXISTS article_comments (
 );
 
 CREATE INDEX IF NOT EXISTS idx_comments_article ON article_comments (article_id, created_at);
+
+-- If an earlier version pointed articles.author_id at doctors(id), repoint it at
+-- auth.users so admins can author too (safe / idempotent).
+ALTER TABLE articles DROP CONSTRAINT IF EXISTS articles_author_id_fkey;
+ALTER TABLE articles ADD CONSTRAINT articles_author_id_fkey
+  FOREIGN KEY (author_id) REFERENCES auth.users(id) ON DELETE CASCADE;
 
 -- ─────────────────────────────────────────────────────────────────────
 -- 2. Row Level Security
@@ -122,3 +129,11 @@ FROM (VALUES
   )
 ) AS c(article_id, author_id, body)
 WHERE NOT EXISTS (SELECT 1 FROM article_comments);
+
+-- Real cover photos for the sample articles (safe if they were seeded earlier
+-- without covers; only fills in the ones that are still empty).
+UPDATE articles SET cover_image = '/articles/cardio.jpg'   WHERE title = 'Understanding your blood pressure numbers'          AND cover_image IS NULL;
+UPDATE articles SET cover_image = '/articles/child.jpg'     WHERE title = 'When should you keep a child home from school?'     AND cover_image IS NULL;
+UPDATE articles SET cover_image = '/articles/skincare.jpg'  WHERE title = 'A simple daily routine for healthy skin'           AND cover_image IS NULL;
+UPDATE articles SET cover_image = '/articles/flu.jpg'       WHERE title = 'Seasonal flu report: what we are seeing this month' AND cover_image IS NULL;
+UPDATE articles SET cover_image = '/articles/mental.jpg'    WHERE title = 'Small steps that protect your mental health'        AND cover_image IS NULL;

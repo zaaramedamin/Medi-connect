@@ -115,4 +115,125 @@ router.delete('/doctors/:id', async (req, res) => {
   res.status(204).send();
 });
 
+// Mock yearly subscription fee used for the revenue estimate
+const YEARLY_SUBSCRIPTION_FEE = 600;
+
+// GET /api/admin/stats — platform analytics (doctors, reservations, peak times, sales)
+router.get('/stats', async (_req, res) => {
+  const [{ data: doctors }, { data: appts }, usersRes] = await Promise.all([
+    supabaseAdmin.from('doctors').select('id, name, specialty, cost, subscription_status'),
+    supabaseAdmin.from('appointments').select('doctor_id, user_id, time_slot, status'),
+    supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+  ]);
+
+  const docs = doctors ?? [];
+  const appointments = appts ?? [];
+  const costById = new Map<string, number>(docs.map(d => [d.id, Number(d.cost ?? 0)]));
+  const nameById = new Map<string, string>(docs.map(d => [d.id, d.name]));
+  const specById = new Map<string, string | null>(docs.map(d => [d.id, d.specialty]));
+
+  const now = Date.now();
+  const completed = appointments.filter(a => a.status === 'completed');
+  const upcoming = appointments.filter(a => a.status === 'confirmed' && new Date(a.time_slot).getTime() > now);
+  const activeDoctors = docs.filter(d => d.subscription_status === 'active').length;
+
+  // Revenue: consultations (completed visits) + mock subscriptions
+  const consultationRevenue = completed.reduce((sum, a) => sum + (costById.get(a.doctor_id) ?? 0), 0);
+  const subscriptionRevenue = activeDoctors * YEARLY_SUBSCRIPTION_FEE;
+
+  // Top doctors by reservations (excluding cancellations) + their earned revenue
+  const reservationCount = new Map<string, number>();
+  const revenueByDoctor = new Map<string, number>();
+  for (const a of appointments) {
+    if (a.status === 'cancelled') continue;
+    reservationCount.set(a.doctor_id, (reservationCount.get(a.doctor_id) ?? 0) + 1);
+  }
+  for (const a of completed) {
+    revenueByDoctor.set(a.doctor_id, (revenueByDoctor.get(a.doctor_id) ?? 0) + (costById.get(a.doctor_id) ?? 0));
+  }
+  const topDoctors = [...reservationCount.entries()]
+    .map(([id, reservations]) => ({
+      id,
+      name: nameById.get(id) ?? 'Doctor',
+      specialty: specById.get(id) ?? null,
+      reservations,
+      revenue: revenueByDoctor.get(id) ?? 0,
+    }))
+    .sort((a, b) => b.reservations - a.reservations)
+    .slice(0, 5);
+
+  // Booking distribution by hour of day and weekday (most efficient times)
+  const hourly = Array.from({ length: 24 }, (_, hour) => ({ hour, count: 0 }));
+  const weekday = Array.from({ length: 7 }, () => 0);
+  for (const a of appointments) {
+    if (a.status === 'cancelled') continue;
+    const d = new Date(a.time_slot);
+    if (Number.isNaN(d.getTime())) continue;
+    hourly[d.getHours()].count += 1;
+    weekday[d.getDay()] += 1;
+  }
+  const peakHour = hourly.reduce((best, h) => (h.count > best.count ? h : best), hourly[0]);
+
+  const patients = (usersRes.data?.users ?? []).filter(
+    u => (u.user_metadata?.role ?? 'patient') === 'patient'
+  ).length;
+
+  res.json({
+    totals: {
+      doctors: docs.length,
+      activeDoctors,
+      patients,
+      appointments: appointments.length,
+      completed: completed.length,
+      upcoming: upcoming.length,
+    },
+    revenue: {
+      consultation: consultationRevenue,
+      subscription: subscriptionRevenue,
+      total: consultationRevenue + subscriptionRevenue,
+    },
+    topDoctors,
+    hourly,
+    peakHour,
+    weekday,
+  });
+});
+
+// GET /api/admin/patients — list patient accounts with their booking counts
+router.get('/patients', async (_req, res) => {
+  const [usersRes, { data: appts }] = await Promise.all([
+    supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    supabaseAdmin.from('appointments').select('user_id'),
+  ]);
+
+  const bookings = new Map<string, number>();
+  for (const a of appts ?? []) bookings.set(a.user_id, (bookings.get(a.user_id) ?? 0) + 1);
+
+  const patients = (usersRes.data?.users ?? [])
+    .filter(u => (u.user_metadata?.role ?? 'patient') === 'patient')
+    .map(u => ({
+      id: u.id,
+      name: (u.user_metadata?.name as string) ?? u.email ?? 'Patient',
+      email: u.email ?? '',
+      created_at: u.created_at,
+      appointments: bookings.get(u.id) ?? 0,
+    }))
+    .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+  res.json(patients);
+});
+
+// DELETE /api/admin/patients/:id — remove a patient account and their bookings
+router.delete('/patients/:id', async (req, res) => {
+  const patientId = req.params.id;
+
+  // appointments.user_id has no cascade, so clear bookings first;
+  // reviews and comments cascade when the auth user is deleted.
+  await supabaseAdmin.from('appointments').delete().eq('user_id', patientId);
+  const { error } = await supabaseAdmin.auth.admin.deleteUser(patientId);
+  if (error) return res.status(500).json({ error: 'Failed to delete patient' });
+
+  res.status(204).send();
+});
+
 export default router;

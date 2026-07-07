@@ -2,6 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   Doctor, Appointment, TimeSlot, Review, AdminDoctor, NewDoctorInput,
   Article, ArticleDetail, ArticleComment, NewArticleInput,
+  AdminStats, AdminPatient,
 } from '@/types';
 
 // In dev this is empty and Vite proxies /api → localhost. In production set
@@ -98,6 +99,13 @@ export const setDoctorSubscription = (id: string, action: 'activate' | 'deactiva
 
 export const deleteDoctor = (id: string) =>
   apiFetch<void>(`/api/admin/doctors/${id}`, { method: 'DELETE' });
+
+export const getAdminStats = () => apiFetch<AdminStats>('/api/admin/stats');
+
+export const getAdminPatients = () => apiFetch<AdminPatient[]>('/api/admin/patients');
+
+export const deletePatient = (id: string) =>
+  apiFetch<void>(`/api/admin/patients/${id}`, { method: 'DELETE' });
 
 // Community (articles + discussion)
 export const getArticles = (category?: string) => {

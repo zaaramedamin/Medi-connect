@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { AnimatePresence, motion } from 'motion/react';
 import { X, Check, ShoppingBag, Minus, Plus, Truck, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -9,10 +10,13 @@ import { lockScroll, unlockScroll } from '@/lib/scroll-lock';
 
 /** Animated product preview that opens after hovering a product for ~2s (or on click). */
 export function ProductQuickView({ product, onClose }: { product: Product | null; onClose: () => void }) {
-  return (
+  // Portal to the body so the page's transform/blur wrapper can't break the
+  // modal's fixed, centred positioning.
+  return createPortal(
     <AnimatePresence>
       {product && <QuickViewInner key={product.id} product={product} onClose={onClose} />}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }
 

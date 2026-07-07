@@ -41,41 +41,43 @@ export function TestimonialCarousel() {
     const el = scroller.current;
     if (!el) return;
     paused.current = true;
-    el.scrollBy({ left: dir * CARD_STEP, behavior: 'smooth' });
-    // Keep the loop valid if a nudge crosses a boundary
+    // The two halves are identical, so recentring by ±half is invisible — this
+    // guarantees there is always room to scroll in the chosen direction.
     const half = el.scrollWidth / 2;
-    if (el.scrollLeft < 0) el.scrollLeft += half;
+    if (dir < 0 && el.scrollLeft < CARD_STEP) el.scrollLeft += half;
+    else if (dir > 0 && el.scrollLeft > half) el.scrollLeft -= half;
+    el.scrollBy({ left: dir * CARD_STEP, behavior: 'smooth' });
     window.clearTimeout(resumeTimer.current);
     resumeTimer.current = window.setTimeout(() => {
       paused.current = false;
     }, 1400);
   };
 
-  const ArrowButton = ({ dir, label }: { dir: 1 | -1; label: string }) => (
-    <button
-      onClick={() => nudge(dir)}
-      aria-label={label}
-      className={`absolute top-1/2 z-20 hidden h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-md transition-colors hover:border-primary/40 hover:text-primary sm:flex ${
-        dir === -1 ? 'left-2 md:left-6' : 'right-2 md:right-6'
-      }`}
-    >
-      {dir === -1 ? <ChevronLeft className="h-5 w-5" /> : <ChevronRight className="h-5 w-5" />}
-    </button>
-  );
-
   return (
     <div className="relative">
-      <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-linear-to-r from-background to-transparent md:w-32" />
-      <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-linear-to-l from-background to-transparent md:w-32" />
+      <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-10 w-12 bg-linear-to-r from-background to-transparent md:w-28" />
+      <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-10 w-12 bg-linear-to-l from-background to-transparent md:w-28" />
 
-      <ArrowButton dir={-1} label="Previous testimonials" />
-      <ArrowButton dir={1} label="Next testimonials" />
+      <button
+        onClick={() => nudge(-1)}
+        aria-label="Previous testimonials"
+        className="absolute left-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-md transition-colors hover:border-primary/40 hover:text-primary md:left-4"
+      >
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button
+        onClick={() => nudge(1)}
+        aria-label="Next testimonials"
+        className="absolute right-2 top-1/2 z-20 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full border bg-card text-foreground shadow-md transition-colors hover:border-primary/40 hover:text-primary md:right-4"
+      >
+        <ChevronRight className="h-5 w-5" />
+      </button>
 
       <div
         ref={scroller}
         onMouseEnter={() => (paused.current = true)}
         onMouseLeave={() => (paused.current = false)}
-        className="flex gap-5 overflow-x-auto px-5 py-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+        className="flex gap-5 overflow-x-auto px-5 py-1 scrollbar-none [&::-webkit-scrollbar]:hidden"
       >
         {[...TESTIMONIALS, ...TESTIMONIALS].map((t, i) => (
           <figure key={i} className="flex w-[20rem] shrink-0 flex-col rounded-2xl border bg-card p-6 md:w-[24rem]">

@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
-import { ARTICLE_CATEGORY_META, formatArticleDate } from '@/data/articleMeta';
+import { ARTICLE_CATEGORY_META, articleCover, formatArticleDate } from '@/data/articleMeta';
 import type { Article } from '@/types';
 import { cn } from '@/lib/utils';
 
@@ -13,19 +13,14 @@ export function ArticleCard({ article }: { article: Article }) {
       to={`/community/${article.id}`}
       className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5"
     >
-      <div className="relative aspect-video overflow-hidden">
-        {article.cover_image ? (
-          <img
-            src={article.cover_image}
-            alt=""
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center bg-linear-to-br from-primary/12 to-accent/12">
-            <Icon className="h-10 w-10 text-primary/50" />
-          </div>
-        )}
-        <span className={cn('absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold', meta.badge)}>
+      <div className="relative aspect-video overflow-hidden bg-muted">
+        <img
+          src={articleCover(article)}
+          alt=""
+          loading="lazy"
+          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+        />
+        <span className={cn('absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm', meta.badge)}>
           <Icon className="h-3 w-3" /> {meta.label}
         </span>
       </div>
