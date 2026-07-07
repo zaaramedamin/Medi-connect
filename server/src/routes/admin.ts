@@ -75,6 +75,45 @@ router.post(
   }
 );
 
+// PATCH /api/admin/doctors/:id — edit a doctor's profile details
+router.patch(
+  '/doctors/:id',
+  validate([
+    body('name').optional().trim().isLength({ min: 2, max: 100 }),
+    body('specialty').optional({ values: 'null' }).trim().isLength({ max: 100 }),
+    body('location').optional({ values: 'null' }).trim().isLength({ max: 200 }),
+    body('cost').optional({ values: 'null' }).isFloat({ min: 0 }),
+    body('phone').optional({ values: 'null' }).trim().isLength({ max: 50 }),
+  ]),
+  async (req, res) => {
+    const updates: Record<string, unknown> = {};
+    for (const key of ['name', 'specialty', 'location', 'cost', 'phone'] as const) {
+      if (key in req.body) updates[key] = req.body[key] === '' ? null : req.body[key];
+    }
+    if (Object.keys(updates).length === 0) {
+      return res.status(400).json({ error: 'Nothing to update' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('doctors')
+      .update(updates)
+      .eq('id', req.params.id)
+      .select('id, name, specialty, location, cost, photos_url, subscription_status, subscription_expires, created_at')
+      .single();
+
+    if (error) return res.status(500).json({ error: 'Failed to update doctor' });
+
+    // Keep the auth display name in sync so emails/comments show the new name
+    if (typeof updates.name === 'string') {
+      await supabaseAdmin.auth.admin.updateUserById(req.params.id, {
+        user_metadata: { name: updates.name },
+      });
+    }
+
+    res.json(data);
+  }
+);
+
 // PATCH /api/admin/doctors/:id/subscription — activate or deactivate (mock)
 router.patch(
   '/doctors/:id/subscription',
@@ -120,11 +159,17 @@ const YEARLY_SUBSCRIPTION_FEE = 600;
 
 // GET /api/admin/stats — platform analytics (doctors, reservations, peak times, sales)
 router.get('/stats', async (_req, res) => {
-  const [{ data: doctors }, { data: appts }, usersRes] = await Promise.all([
+  const [{ data: doctors }, { data: appts }, usersRes, ordersRes] = await Promise.all([
     supabaseAdmin.from('doctors').select('id, name, specialty, cost, subscription_status'),
     supabaseAdmin.from('appointments').select('doctor_id, user_id, time_slot, status'),
     supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    supabaseAdmin.from('orders').select('total, status'),
   ]);
+
+  // Shop sales (orders table may not exist until its migration runs)
+  const orders = ordersRes.error ? [] : (ordersRes.data ?? []);
+  const shopOrders = orders.filter(o => o.status !== 'cancelled');
+  const shopRevenue = shopOrders.reduce((sum, o) => sum + Number(o.total ?? 0), 0);
 
   const docs = doctors ?? [];
   const appointments = appts ?? [];
@@ -186,11 +231,13 @@ router.get('/stats', async (_req, res) => {
       appointments: appointments.length,
       completed: completed.length,
       upcoming: upcoming.length,
+      orders: shopOrders.length,
     },
     revenue: {
       consultation: consultationRevenue,
       subscription: subscriptionRevenue,
-      total: consultationRevenue + subscriptionRevenue,
+      shop: shopRevenue,
+      total: consultationRevenue + subscriptionRevenue + shopRevenue,
     },
     topDoctors,
     hourly,

@@ -1,5 +1,5 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Stethoscope, Moon, Sun, LogOut, LayoutDashboard, Menu, X, ShoppingBag } from 'lucide-react';
+import { Stethoscope, Moon, Sun, LogOut, LayoutDashboard, Menu, X, ShoppingBag, UserCog } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore, cartCount } from '@/stores/cartStore';
@@ -89,6 +89,9 @@ export function Header() {
               <Button variant="ghost" size="sm" asChild>
                 <Link to={dashboardPath}><LayoutDashboard className="h-4 w-4 mr-1.5" />Dashboard</Link>
               </Button>
+              <Button variant="ghost" size="icon" asChild aria-label="Account settings">
+                <Link to="/settings"><UserCog className="h-4 w-4" /></Link>
+              </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
                 <LogOut className="h-4 w-4 mr-1.5" />Sign out
               </Button>
@@ -134,6 +137,9 @@ export function Header() {
               <>
                 <Button variant="outline" size="sm" asChild onClick={() => setMenuOpen(false)}>
                   <Link to={dashboardPath}><LayoutDashboard className="h-4 w-4 mr-1.5" />Dashboard</Link>
+                </Button>
+                <Button variant="outline" size="sm" asChild onClick={() => setMenuOpen(false)}>
+                  <Link to="/settings"><UserCog className="h-4 w-4 mr-1.5" />Settings</Link>
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>
                   <LogOut className="h-4 w-4 mr-1.5" />Sign out

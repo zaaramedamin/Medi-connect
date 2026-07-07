@@ -1,5 +1,4 @@
 import 'dotenv/config';
-import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
@@ -10,6 +9,7 @@ import uploadRoutes from './routes/uploads';
 import reviewRoutes from './routes/reviews';
 import adminRoutes from './routes/admin';
 import articleRoutes from './routes/articles';
+import orderRoutes from './routes/orders';
 import { processReminders } from './services/reminderService';
 
 const app = express();
@@ -60,9 +60,22 @@ app.use('/api/uploads', uploadRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/articles', articleRoutes);
+app.use('/api/orders', orderRoutes);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+
+// External-cron hook for reminders. On hosts whose free tiers sleep idle
+// services, the in-process interval below never fires — point a scheduler
+// (GitHub Actions cron, cron-job.org, UptimeRobot) here every 15 minutes.
+app.post('/api/jobs/reminders', async (req, res) => {
+  const token = process.env.JOB_TOKEN;
+  if (!token || req.headers['x-job-token'] !== token) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  await processReminders();
+  res.json({ status: 'ok' });
+});
 
 // 404 handler
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));

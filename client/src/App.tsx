@@ -1,7 +1,8 @@
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
+import { Toaster } from 'sonner';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/features/CartDrawer';
@@ -12,6 +13,9 @@ import { useAuthInit } from '@/hooks/useAuth';
 const Home = lazy(() => import('@/pages/Home'));
 const Login = lazy(() => import('@/pages/auth/Login'));
 const Register = lazy(() => import('@/pages/auth/Register'));
+const ForgotPassword = lazy(() => import('@/pages/auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('@/pages/auth/ResetPassword'));
+const Settings = lazy(() => import('@/pages/Settings'));
 const PatientDashboard = lazy(() => import('@/pages/patient/Dashboard'));
 const DoctorDashboard = lazy(() => import('@/pages/doctor/Dashboard'));
 const DoctorProfile = lazy(() => import('@/pages/doctor/Profile'));
@@ -44,15 +48,37 @@ function ProtectedRoute({ children, role }: { children: React.ReactNode; role?: 
   return <>{children}</>;
 }
 
+// Per-route document titles (first match wins; longest prefixes first)
+const PAGE_TITLES: [string, string][] = [
+  ['/patient/dashboard', 'My appointments'],
+  ['/doctor/dashboard', 'Doctor dashboard'],
+  ['/community/new', 'Write an article'],
+  ['/forgot-password', 'Reset password'],
+  ['/reset-password', 'New password'],
+  ['/community', 'Doctor insights & advice'],
+  ['/settings', 'Account settings'],
+  ['/register', 'Create an account'],
+  ['/doctor/', 'Doctor profile'],
+  ['/login', 'Sign in'],
+  ['/admin', 'Admin dashboard'],
+  ['/shop', 'Health shop'],
+];
+
 function AppRoutes() {
   useAuthInit();
   const location = useLocation();
+
+  useEffect(() => {
+    const match = PAGE_TITLES.find(([prefix]) => location.pathname.startsWith(prefix))?.[1];
+    document.title = match ? `${match} · MediConnect` : 'MediConnect — Find a doctor & book online';
+  }, [location.pathname]);
 
   return (
     <div className="flex min-h-screen flex-col">
       <ScrollProgress />
       <Header />
       <CartDrawer />
+      <Toaster richColors position="top-center" />
       <main className="flex-1">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -67,6 +93,12 @@ function AppRoutes() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/forgot-password" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route
+                  path="/settings"
+                  element={<ProtectedRoute><Settings /></ProtectedRoute>}
+                />
                 <Route path="/shop" element={<Shop />} />
                 <Route path="/community" element={<Community />} />
                 <Route

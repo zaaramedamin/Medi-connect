@@ -109,6 +109,30 @@ export interface NewArticleInput {
   cover_image?: string;
 }
 
+// ── Shop orders (demo checkout — no payment) ─────────────────────────
+export interface OrderItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  image: string | null;
+}
+
+export interface Order {
+  id: number;
+  reference: string;
+  items: OrderItem[];
+  subtotal: number;
+  shipping: number;
+  total: number;
+  status: 'placed' | 'delivered' | 'cancelled';
+  created_at: string;
+}
+
+export interface AdminOrder extends Order {
+  customer_name: string;
+}
+
 // ── Admin analytics & management ─────────────────────────────────────
 export interface AdminStats {
   totals: {
@@ -118,8 +142,9 @@ export interface AdminStats {
     appointments: number;
     completed: number;
     upcoming: number;
+    orders: number;
   };
-  revenue: { consultation: number; subscription: number; total: number };
+  revenue: { consultation: number; subscription: number; shop: number; total: number };
   topDoctors: { id: string; name: string; specialty: string | null; reservations: number; revenue: number }[];
   hourly: { hour: number; count: number }[];
   peakHour: { hour: number; count: number };

@@ -1,21 +1,29 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, MapPin, Clock, Search, Star } from 'lucide-react';
+import { CalendarDays, MapPin, Clock, Search, Star, Package } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { StarInput } from '@/components/ui/star-rating';
-import { getMyAppointments, cancelAppointment, createReview } from '@/services/api';
+import { getMyAppointments, cancelAppointment, createReview, getMyOrders } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { formatDT } from '@/data/products';
 import { formatDate, formatTime } from '@/lib/utils';
 
 const statusVariant: Record<string, 'success' | 'destructive' | 'secondary'> = {
   confirmed: 'success',
   cancelled: 'destructive',
   completed: 'secondary',
+};
+
+const orderStatusVariant: Record<string, 'success' | 'destructive' | 'secondary'> = {
+  placed: 'secondary',
+  delivered: 'success',
+  cancelled: 'destructive',
 };
 
 export default function PatientDashboard() {
@@ -27,9 +35,18 @@ export default function PatientDashboard() {
     queryFn: getMyAppointments,
   });
 
+  const { data: orders } = useQuery({
+    queryKey: ['orders', 'my'],
+    queryFn: getMyOrders,
+  });
+
   const cancelMutation = useMutation({
     mutationFn: cancelAppointment,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments', 'my'] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['appointments', 'my'] });
+      toast.success('Appointment cancelled.');
+    },
+    onError: (e: Error) => toast.error(e.message || 'Could not cancel the appointment'),
   });
 
   const userName = user?.user_metadata?.name ?? 'Patient';
@@ -88,6 +105,42 @@ export default function PatientDashboard() {
             </section>
           )}
         </div>
+      )}
+
+      {/* Shop orders */}
+      {orders && orders.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
+            <Package className="h-5 w-5 text-primary" /> My orders
+          </h2>
+          <Card>
+            <CardContent className="divide-y p-0">
+              {orders.map(o => (
+                <div key={o.id} className="flex flex-wrap items-center gap-4 p-4">
+                  <div className="flex -space-x-2">
+                    {o.items.slice(0, 3).map(item => (
+                      <img
+                        key={item.id}
+                        src={item.image ?? '/products/thermometer.jpg'}
+                        alt=""
+                        className="h-10 w-10 rounded-lg border-2 border-background object-cover"
+                        loading="lazy"
+                      />
+                    ))}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold">{o.reference}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {o.items.reduce((n, i) => n + i.quantity, 0)} item{o.items.length !== 1 ? 's' : ''} · {formatDate(o.created_at)}
+                    </p>
+                  </div>
+                  <span className="font-bold text-primary">{formatDT(o.total)}</span>
+                  <Badge variant={orderStatusVariant[o.status] ?? 'secondary'} className="capitalize">{o.status}</Badge>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </section>
       )}
     </div>
   );

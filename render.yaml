@@ -26,6 +26,8 @@ services:
         sync: false            # e.g. noreply@yourdomain.com
       - key: CLIENT_ORIGIN
         sync: false            # the static site URL, e.g. https://mediconnect.onrender.com
+      - key: JOB_TOKEN
+        generateValue: true    # secret for POST /api/jobs/reminders (external cron)
 
   # ── React client (static) ────────────────────────────────────────────
   - type: web

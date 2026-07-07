@@ -4,9 +4,11 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
 import {
   UserPlus, Trash2, ShieldCheck, ShieldOff, Stethoscope, LayoutDashboard,
   Users, Newspaper, Activity, CalendarCheck, Wallet, TrendingUp, Clock, PenSquare,
+  Package, Pencil, ShoppingBag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,19 +17,22 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import {
-  getAdminDoctors, createDoctor, setDoctorSubscription, deleteDoctor,
+  getAdminDoctors, createDoctor, updateDoctor, setDoctorSubscription, deleteDoctor,
   getAdminStats, getAdminPatients, deletePatient, getArticles, deleteArticle,
+  getAdminOrders, setOrderStatus,
 } from '@/services/api';
+import type { AdminDoctor, Order } from '@/types';
 import { ARTICLE_CATEGORY_META } from '@/data/articleMeta';
 import { formatDT } from '@/data/products';
 import { formatDate, cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'doctors' | 'patients' | 'posts';
+type Tab = 'overview' | 'doctors' | 'patients' | 'sales' | 'posts';
 
 const TABS: { value: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { value: 'overview', label: 'Overview', icon: LayoutDashboard },
   { value: 'doctors', label: 'Doctors', icon: Stethoscope },
   { value: 'patients', label: 'Patients', icon: Users },
+  { value: 'sales', label: 'Sales', icon: Package },
   { value: 'posts', label: 'Posts', icon: Newspaper },
 ];
 
@@ -62,6 +67,7 @@ export default function AdminDashboard() {
       {tab === 'overview' && <OverviewTab />}
       {tab === 'doctors' && <DoctorsTab />}
       {tab === 'patients' && <PatientsTab />}
+      {tab === 'sales' && <SalesTab />}
       {tab === 'posts' && <PostsTab />}
     </div>
   );
@@ -109,10 +115,11 @@ function OverviewTab() {
       </div>
 
       {/* Revenue */}
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <RevenueCard label="Total revenue" value={stats.revenue.total} icon={Wallet} highlight />
         <RevenueCard label="Consultations" value={stats.revenue.consultation} icon={TrendingUp} />
         <RevenueCard label="Subscriptions" value={stats.revenue.subscription} icon={ShieldCheck} />
+        <RevenueCard label="Shop sales" value={stats.revenue.shop} icon={ShoppingBag} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -226,6 +233,7 @@ type NewDoctorParsed = z.output<typeof newDoctorSchema>;
 function DoctorsTab() {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
+  const [editing, setEditing] = useState<AdminDoctor | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
 
   const { data: doctors, isLoading } = useQuery({ queryKey: ['admin', 'doctors'], queryFn: getAdminDoctors });
@@ -236,14 +244,19 @@ function DoctorsTab() {
 
   const createMutation = useMutation({
     mutationFn: createDoctor,
-    onSuccess: () => { invalidate(); setAddOpen(false); reset(); },
+    onSuccess: () => { invalidate(); setAddOpen(false); reset(); toast.success('Doctor onboarded.'); },
     onError: (e: Error) => setFormError(e.message),
   });
   const subMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'activate' | 'deactivate' }) => setDoctorSubscription(id, action),
-    onSuccess: invalidate,
+    onSuccess: d => { invalidate(); toast.success(d.subscription_status === 'active' ? 'Subscription activated.' : 'Subscription deactivated.'); },
+    onError: (e: Error) => toast.error(e.message),
   });
-  const deleteMutation = useMutation({ mutationFn: deleteDoctor, onSuccess: invalidate });
+  const deleteMutation = useMutation({
+    mutationFn: deleteDoctor,
+    onSuccess: () => { invalidate(); toast.success('Doctor deleted.'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const { register, handleSubmit, reset, formState: { errors } } = useForm<NewDoctorForm, unknown, NewDoctorParsed>({
     resolver: zodResolver(newDoctorSchema),
@@ -287,6 +300,9 @@ function DoctorsTab() {
                     {doc.subscription_expires && <p className="mt-1 text-xs text-muted-foreground">until {formatDate(doc.subscription_expires)}</p>}
                   </div>
                   <div className="flex gap-2">
+                    <Button variant="ghost" size="icon" onClick={() => setEditing(doc)} aria-label={`Edit ${doc.name}`}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
                     {active ? (
                       <Button variant="outline" size="sm" onClick={() => subMutation.mutate({ id: doc.id, action: 'deactivate' })} disabled={subMutation.isPending}>
                         <ShieldOff className="mr-1 h-4 w-4" /> Deactivate
@@ -339,7 +355,65 @@ function DoctorsTab() {
           </form>
         </DialogContent>
       </Dialog>
+
+      {editing && (
+        <EditDoctorDialog doctor={editing} onClose={() => setEditing(null)} onSaved={invalidate} />
+      )}
     </>
+  );
+}
+
+const editDoctorSchema = z.object({
+  name: z.string().min(2, 'Name is required').max(100),
+  specialty: z.string().max(100).optional(),
+  location: z.string().max(200).optional(),
+  cost: z.coerce.number().min(0).optional(),
+});
+type EditDoctorForm = z.input<typeof editDoctorSchema>;
+type EditDoctorParsed = z.output<typeof editDoctorSchema>;
+
+function EditDoctorDialog({ doctor, onClose, onSaved }: { doctor: AdminDoctor; onClose: () => void; onSaved: () => void }) {
+  const { register, handleSubmit, formState: { errors } } = useForm<EditDoctorForm, unknown, EditDoctorParsed>({
+    resolver: zodResolver(editDoctorSchema),
+    defaultValues: {
+      name: doctor.name,
+      specialty: doctor.specialty ?? '',
+      location: doctor.location ?? '',
+      cost: doctor.cost ?? undefined,
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: EditDoctorParsed) => updateDoctor(doctor.id, data),
+    onSuccess: () => { onSaved(); onClose(); toast.success('Doctor updated.'); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  return (
+    <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4 text-primary" /> Edit {doctor.name}</DialogTitle>
+          <DialogDescription>Changes are visible to patients immediately.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit(data => updateMutation.mutate(data))} className="space-y-3" noValidate>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Full name" error={errors.name?.message}><Input {...register('name')} /></Field>
+            <Field label="Specialty" error={errors.specialty?.message}><Input {...register('specialty')} /></Field>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="City" error={errors.location?.message}><Input {...register('location')} /></Field>
+            <Field label="Cost (DT)" error={errors.cost?.message}><Input type="number" {...register('cost')} /></Field>
+          </div>
+          <div className="flex gap-2 pt-1">
+            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+            <Button type="submit" className="flex-1" disabled={updateMutation.isPending}>
+              {updateMutation.isPending ? 'Saving…' : 'Save changes'}
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -352,7 +426,9 @@ function PatientsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'patients'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success('Patient deleted.');
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   if (isLoading) return <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}</div>;
@@ -392,6 +468,93 @@ function PatientsTab() {
   );
 }
 
+// ── Sales / shop orders ──────────────────────────────────────────────
+const ORDER_STATUS_STYLE: Record<Order['status'], 'secondary' | 'success' | 'destructive'> = {
+  placed: 'secondary',
+  delivered: 'success',
+  cancelled: 'destructive',
+};
+
+function SalesTab() {
+  const queryClient = useQueryClient();
+  const { data: orders, isLoading } = useQuery({ queryKey: ['admin', 'orders'], queryFn: getAdminOrders });
+
+  const statusMutation = useMutation({
+    mutationFn: ({ id, status }: { id: number; status: Order['status'] }) => setOrderStatus(id, status),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
+      queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success('Order updated.');
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  if (isLoading) {
+    return <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}</div>;
+  }
+
+  const active = (orders ?? []).filter(o => o.status !== 'cancelled');
+  const revenue = active.reduce((sum, o) => sum + Number(o.total), 0);
+
+  return (
+    <div className="space-y-6">
+      <div className="grid gap-4 sm:grid-cols-3">
+        <RevenueCard label="Shop revenue" value={revenue} icon={ShoppingBag} highlight />
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Orders</span>
+            <Package className="h-4 w-4 text-primary" />
+          </div>
+          <p className="font-display text-2xl font-extrabold">{active.length}</p>
+        </div>
+        <div className="rounded-2xl border bg-card p-5">
+          <div className="mb-2 flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">Avg order</span>
+            <TrendingUp className="h-4 w-4 text-primary" />
+          </div>
+          <p className="font-display text-2xl font-extrabold">
+            {formatDT(active.length ? Math.round(revenue / active.length) : 0)}
+          </p>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader><CardTitle className="text-base">Orders</CardTitle></CardHeader>
+        <CardContent className="divide-y p-0">
+          {orders?.map(o => (
+            <div key={o.id} className="flex flex-wrap items-center gap-4 p-4">
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{o.reference}</p>
+                <p className="truncate text-sm text-muted-foreground">
+                  {o.customer_name} · {o.items.reduce((n, i) => n + i.quantity, 0)} items · {formatDate(o.created_at)}
+                </p>
+              </div>
+              <span className="font-bold text-primary">{formatDT(Number(o.total))}</span>
+              <Badge variant={ORDER_STATUS_STYLE[o.status]} className="capitalize">{o.status}</Badge>
+              <select
+                value={o.status}
+                onChange={e => statusMutation.mutate({ id: o.id, status: e.target.value as Order['status'] })}
+                disabled={statusMutation.isPending}
+                className="h-9 cursor-pointer rounded-lg border bg-card px-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                aria-label={`Update status of ${o.reference}`}
+              >
+                <option value="placed">Placed</option>
+                <option value="delivered">Delivered</option>
+                <option value="cancelled">Cancelled</option>
+              </select>
+            </div>
+          ))}
+          {orders?.length === 0 && (
+            <p className="p-8 text-center text-sm text-muted-foreground">
+              No orders yet. They appear here once patients check out from the shop.
+            </p>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 // ── Posts management ─────────────────────────────────────────────────
 function PostsTab() {
   const queryClient = useQueryClient();
@@ -401,7 +564,9 @@ function PostsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
+      toast.success('Post deleted.');
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (

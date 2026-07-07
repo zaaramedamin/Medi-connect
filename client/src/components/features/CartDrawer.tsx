@@ -1,8 +1,13 @@
 import { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
+import { useMutation } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
+import { toast } from 'sonner';
 import { ShoppingBag, X, Plus, Minus, Trash2, Check, ShieldCheck, Truck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCartStore, cartCount, cartTotal } from '@/stores/cartStore';
+import { useAuthStore } from '@/stores/authStore';
+import { placeOrder } from '@/services/api';
 import { formatDT } from '@/data/products';
 import { lockScroll, unlockScroll } from '@/lib/scroll-lock';
 
@@ -11,6 +16,7 @@ const SHIPPING_FEE = 7;
 
 export function CartDrawer() {
   const { items, isOpen, close, setQuantity, remove, clear } = useCartStore();
+  const { user } = useAuthStore();
   const [order, setOrder] = useState<string | null>(null);
 
   const count = cartCount(items);
@@ -36,10 +42,23 @@ export function CartDrawer() {
     window.setTimeout(() => setOrder(null), 300);
   };
 
-  const checkout = () => {
-    setOrder('MC-' + Math.random().toString(36).slice(2, 8).toUpperCase());
-    clear();
-  };
+  const checkoutMutation = useMutation({
+    mutationFn: () =>
+      placeOrder(
+        items.map(({ product, quantity }) => ({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          quantity,
+          image: product.image,
+        }))
+      ),
+    onSuccess: created => {
+      setOrder(created.reference);
+      clear();
+    },
+    onError: (e: Error) => toast.error(e.message || 'Could not place the order'),
+  });
 
   return (
     <AnimatePresence>
@@ -150,9 +169,20 @@ export function CartDrawer() {
                       <span className="text-primary">{formatDT(total)}</span>
                     </div>
                   </div>
-                  <Button className="mt-4 w-full" size="lg" onClick={checkout}>
-                    Checkout · {formatDT(total)}
-                  </Button>
+                  {user ? (
+                    <Button
+                      className="mt-4 w-full"
+                      size="lg"
+                      onClick={() => checkoutMutation.mutate()}
+                      disabled={checkoutMutation.isPending}
+                    >
+                      {checkoutMutation.isPending ? 'Placing order…' : `Checkout · ${formatDT(total)}`}
+                    </Button>
+                  ) : (
+                    <Button className="mt-4 w-full" size="lg" asChild onClick={handleClose}>
+                      <Link to="/login">Sign in to checkout</Link>
+                    </Button>
+                  )}
                   <p className="mt-2.5 flex items-center justify-center gap-1.5 text-[11px] text-muted-foreground">
                     <ShieldCheck className="h-3.5 w-3.5" /> Demo checkout — no payment is taken.
                   </p>
@@ -196,8 +226,8 @@ function OrderConfirmation({ reference, onClose }: { reference: string; onClose:
       </motion.div>
       <p className="font-display text-lg font-bold">Thank you for your order</p>
       <p className="max-w-xs text-sm text-muted-foreground">
-        Your order <span className="font-semibold text-foreground">{reference}</span> has been placed. A confirmation
-        would normally be emailed to you.
+        Your order <span className="font-semibold text-foreground">{reference}</span> has been placed.
+        You can follow it in your dashboard under “My orders”.
       </p>
       <Button className="mt-2" onClick={onClose}>
         Continue shopping

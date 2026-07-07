@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type {
   Doctor, Appointment, TimeSlot, Review, AdminDoctor, NewDoctorInput,
   Article, ArticleDetail, ArticleComment, NewArticleInput,
-  AdminStats, AdminPatient,
+  AdminStats, AdminPatient, Order, OrderItem, AdminOrder,
 } from '@/types';
 
 // In dev this is empty and Vite proxies /api → localhost. In production set
@@ -101,6 +101,20 @@ export const deleteDoctor = (id: string) =>
   apiFetch<void>(`/api/admin/doctors/${id}`, { method: 'DELETE' });
 
 export const getAdminStats = () => apiFetch<AdminStats>('/api/admin/stats');
+
+export const updateDoctor = (id: string, updates: Partial<Pick<AdminDoctor, 'name' | 'specialty' | 'location' | 'cost'>>) =>
+  apiFetch<AdminDoctor>(`/api/admin/doctors/${id}`, { method: 'PATCH', body: JSON.stringify(updates) });
+
+// Orders (demo checkout)
+export const placeOrder = (items: OrderItem[]) =>
+  apiFetch<Order>('/api/orders', { method: 'POST', body: JSON.stringify({ items }) });
+
+export const getMyOrders = () => apiFetch<Order[]>('/api/orders/my');
+
+export const getAdminOrders = () => apiFetch<AdminOrder[]>('/api/orders');
+
+export const setOrderStatus = (id: number, status: Order['status']) =>
+  apiFetch<Order>(`/api/orders/${id}/status`, { method: 'PATCH', body: JSON.stringify({ status }) });
 
 export const getAdminPatients = () => apiFetch<AdminPatient[]>('/api/admin/patients');
 
