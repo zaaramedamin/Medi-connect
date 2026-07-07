@@ -6,7 +6,7 @@ import { useCartStore } from '@/stores/cartStore';
 import { formatDT, type Product } from '@/data/products';
 import { cn } from '@/lib/utils';
 
-const HOVER_PREVIEW_MS = 2000;
+const HOVER_PREVIEW_MS = 1000;
 
 interface ProductCardProps {
   product: Product;
@@ -16,8 +16,8 @@ interface ProductCardProps {
 }
 
 /**
- * Grid product card. Hovering for ~2s (fine pointers only) opens the quick-view;
- * a bar under the image fills over those 2s to signal it. Touch users tap the eye button.
+ * Grid product card. Hovering for ~1s (fine pointers only) opens the quick-view;
+ * a bar under the image fills over that second to signal it. Touch users tap the eye button.
  */
 export function ProductCard({ product, onQuickView, compact = false }: ProductCardProps) {
   const add = useCartStore(s => s.add);
@@ -67,10 +67,10 @@ export function ProductCard({ product, onQuickView, compact = false }: ProductCa
           <Eye className="h-4 w-4" />
         </button>
 
-        {/* Hover-hold progress: fills over 2s, matching the preview timer */}
+        {/* Hover-hold progress: fills over 1s, matching the preview timer */}
         <span
           aria-hidden
-          className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-primary transition-transform duration-2000 ease-linear group-hover/card:scale-x-100"
+          className="absolute inset-x-0 bottom-0 h-1 origin-left scale-x-0 bg-primary transition-transform duration-1000 ease-linear group-hover/card:scale-x-100"
         />
       </div>
 
