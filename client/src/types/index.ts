@@ -66,3 +66,45 @@ export interface NewDoctorInput {
   cost?: number;
   activate?: boolean;
 }
+
+// ── Community (doctor reports, advice & discussion) ──────────────────
+export type ArticleCategory = 'report' | 'advice' | 'discussion';
+
+export interface ArticleAuthor {
+  name: string;
+  specialty: string | null;
+  photos_url: string | null;
+}
+
+export interface Article {
+  id: number;
+  author_id: string;
+  title: string;
+  category: ArticleCategory;
+  excerpt: string | null;
+  cover_image: string | null;
+  created_at: string;
+  author: ArticleAuthor;
+  comment_count: number;
+}
+
+export interface ArticleComment {
+  id: number;
+  body: string;
+  created_at: string;
+  author_name: string;
+  author_role: string;
+}
+
+export interface ArticleDetail extends Omit<Article, 'comment_count'> {
+  body: string;
+  comments: ArticleComment[];
+}
+
+export interface NewArticleInput {
+  title: string;
+  category: ArticleCategory;
+  excerpt?: string;
+  body: string;
+  cover_image?: string;
+}

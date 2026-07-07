@@ -4,6 +4,7 @@ import { Suspense, lazy } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
+import { CartDrawer } from '@/components/features/CartDrawer';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuthInit } from '@/hooks/useAuth';
@@ -15,6 +16,10 @@ const PatientDashboard = lazy(() => import('@/pages/patient/Dashboard'));
 const DoctorDashboard = lazy(() => import('@/pages/doctor/Dashboard'));
 const DoctorProfile = lazy(() => import('@/pages/doctor/Profile'));
 const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'));
+const Shop = lazy(() => import('@/pages/Shop'));
+const Community = lazy(() => import('@/pages/community/Community'));
+const CommunityArticle = lazy(() => import('@/pages/community/Article'));
+const NewArticle = lazy(() => import('@/pages/community/NewArticle'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -44,6 +49,7 @@ function AppRoutes() {
     <div className="flex min-h-screen flex-col">
       <ScrollProgress />
       <Header />
+      <CartDrawer />
       <main className="flex-1">
         <AnimatePresence mode="wait" initial={false}>
           <motion.div
@@ -58,6 +64,13 @@ function AppRoutes() {
                 <Route path="/" element={<Home />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
+                <Route path="/shop" element={<Shop />} />
+                <Route path="/community" element={<Community />} />
+                <Route
+                  path="/community/new"
+                  element={<ProtectedRoute role="doctor"><NewArticle /></ProtectedRoute>}
+                />
+                <Route path="/community/:id" element={<CommunityArticle />} />
                 <Route path="/doctor/:id" element={<DoctorProfile />} />
                 <Route
                   path="/patient/dashboard"

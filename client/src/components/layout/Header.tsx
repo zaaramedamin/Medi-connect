@@ -1,17 +1,33 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Stethoscope, Moon, Sun, LogOut, LayoutDashboard, Menu, X } from 'lucide-react';
+import { Stethoscope, Moon, Sun, LogOut, LayoutDashboard, Menu, X, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
+import { useCartStore, cartCount } from '@/stores/cartStore';
 import { useState, useEffect } from 'react';
 
 const NAV_LINKS = [
   { label: 'Find a doctor', href: '/' },
-  { label: 'How it works', href: '/#how-it-works' },
+  { label: 'Shop', href: '/shop' },
+  { label: 'Insights', href: '/community' },
   { label: 'For doctors', href: '/#for-doctors' },
 ] as const;
 
+const NAV_LINK_CLASS =
+  'rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted';
+
+/** Hash links scroll within the home page; route links use client-side navigation. */
+function NavLink({ label, href, onClick, className = NAV_LINK_CLASS }: { label: string; href: string; onClick?: () => void; className?: string }) {
+  if (href.includes('#')) {
+    return <a href={href} onClick={onClick} className={className}>{label}</a>;
+  }
+  return <Link to={href} onClick={onClick} className={className}>{label}</Link>;
+}
+
 export function Header() {
   const { user, role, signOut } = useAuthStore();
+  const cartItems = useCartStore(s => s.items);
+  const openCart = useCartStore(s => s.open);
+  const count = cartCount(cartItems);
   const navigate = useNavigate();
   const [dark, setDark] = useState(() => localStorage.getItem('theme') === 'dark');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -43,18 +59,27 @@ export function Header() {
 
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Main">
-          {NAV_LINKS.map(({ label, href }) => (
-            <a
-              key={label}
-              href={href}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted"
-            >
-              {label}
-            </a>
+          {NAV_LINKS.map(link => (
+            <NavLink key={link.label} {...link} />
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={openCart}
+            aria-label={`Open bag${count ? `, ${count} items` : ''}`}
+            className="relative"
+          >
+            <ShoppingBag className="h-4 w-4" />
+            {count > 0 && (
+              <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold leading-none text-primary-foreground">
+                {count}
+              </span>
+            )}
+          </Button>
+
           <Button variant="ghost" size="icon" onClick={() => setDark(d => !d)} aria-label="Toggle theme">
             {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -96,15 +121,13 @@ export function Header() {
       {/* Mobile menu */}
       {menuOpen && (
         <nav className="md:hidden border-t bg-background px-5 py-4 space-y-1 animate-fade-in" aria-label="Mobile">
-          {NAV_LINKS.map(({ label, href }) => (
-            <a
-              key={label}
-              href={href}
+          {NAV_LINKS.map(link => (
+            <NavLink
+              key={link.label}
+              {...link}
               onClick={() => setMenuOpen(false)}
               className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
-            >
-              {label}
-            </a>
+            />
           ))}
           <div className="pt-3 mt-2 border-t flex flex-col gap-2">
             {user ? (

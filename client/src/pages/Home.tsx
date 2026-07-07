@@ -9,14 +9,15 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { BlurFade } from '@/components/ui/blur-fade';
 import { NumberTicker } from '@/components/ui/number-ticker';
-import { Marquee } from '@/components/ui/marquee';
 import { Typewriter } from '@/components/ui/typewriter';
 import { RotatingText } from '@/components/ui/rotating-text';
 import { Parallax } from '@/components/ui/parallax';
 import { DoctorCard } from '@/components/features/DoctorCard';
 import { DoctorMap } from '@/components/features/DoctorMap';
 import { HealthProducts } from '@/components/features/HealthProducts';
-import { searchDoctors } from '@/services/api';
+import { TestimonialCarousel } from '@/components/features/TestimonialCarousel';
+import { ArticleCard } from '@/components/features/ArticleCard';
+import { searchDoctors, getArticles } from '@/services/api';
 import { useDebounce } from '@/hooks/useDebounce';
 import { haversineKm, cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -57,15 +58,6 @@ const STEPS = [
   { step: '01', title: 'Search', desc: 'Find doctors by name, specialty, or location — results appear as you type.' },
   { step: '02', title: 'Pick a slot', desc: 'Browse real-time availability on the calendar and choose the time that suits you.' },
   { step: '03', title: 'Get confirmed', desc: 'Receive an instant email confirmation with all your appointment details.' },
-] as const;
-
-const TESTIMONIALS = [
-  { name: 'Sarra B.', role: 'Patient', quote: 'Booked a cardiologist in under a minute. The confirmation email arrived instantly — no phone calls, no waiting.' },
-  { name: 'Dr. Karim H.', role: 'Cardiologist', quote: 'My schedule fills itself. Blocking time off and managing bookings takes seconds from the dashboard.' },
-  { name: 'Mohamed A.', role: 'Patient', quote: 'The calendar shows exactly which slots are free, so there is never any back-and-forth. Simple and reliable.' },
-  { name: 'Dr. Leila T.', role: 'Pediatrician', quote: 'Parents book night and day without calling my assistant. My no-show rate dropped since the email reminders.' },
-  { name: 'Aya R.', role: 'Patient', quote: 'I found a dermatologist in my city, compared prices, and booked — all during my lunch break.' },
-  { name: 'Dr. Walid M.', role: 'Psychiatrist', quote: 'The 45-minute slot setting fits my sessions perfectly. Patients see only the times I actually offer.' },
 ] as const;
 
 export default function Home() {
@@ -116,6 +108,13 @@ export default function Home() {
         .slice(0, 6),
     [allDoctors]
   );
+
+  // Latest doctor articles for the home "insights" section (hidden until seeded)
+  const { data: latestArticles } = useQuery({
+    queryKey: ['articles', 'home'],
+    queryFn: () => getArticles(),
+  });
+  const insights = (latestArticles ?? []).slice(0, 3);
 
   const sortedDoctors = useMemo(() => {
     if (!doctors || sort === 'relevance') return doctors;
@@ -429,36 +428,39 @@ export default function Home() {
           {/* Health products shop */}
           <HealthProducts />
 
+          {/* Doctor insights & advice */}
+          {insights.length > 0 && (
+            <section className="container py-16">
+              <BlurFade>
+                <div className="mb-8 flex items-end justify-between gap-4">
+                  <div>
+                    <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                      <Stethoscope className="h-3.5 w-3.5" /> Health insights
+                    </span>
+                    <h2 className="mb-1 text-2xl font-bold md:text-3xl">From our doctors — reports &amp; advice</h2>
+                    <p className="text-sm text-muted-foreground">Trusted guidance and public updates, written by the doctors on MediConnect.</p>
+                  </div>
+                  <Link to="/community" className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:underline sm:inline-flex">
+                    Read the community <ArrowRight className="h-4 w-4" />
+                  </Link>
+                </div>
+              </BlurFade>
+              <div className="grid gap-6 md:grid-cols-3">
+                {insights.map((a, i) => (
+                  <BlurFade key={a.id} delay={0.06 * i} className="h-full">
+                    <ArticleCard article={a} />
+                  </BlurFade>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Testimonials */}
           <section className="bg-muted/50 py-16 overflow-hidden">
             <BlurFade>
               <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">Loved by patients and doctors</h2>
             </BlurFade>
-            <div className="relative">
-              <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 md:w-32 bg-linear-to-r from-background to-transparent" />
-              <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 md:w-32 bg-linear-to-l from-background to-transparent" />
-              <Marquee pauseOnHover className="[--duration:50s]">
-                {TESTIMONIALS.map(({ name, role, quote }) => (
-                  <figure key={name} className="w-[20rem] md:w-[24rem] shrink-0 rounded-2xl border bg-card p-6 flex flex-col">
-                    <div className="flex gap-0.5 mb-4" aria-label="5 out of 5 stars">
-                      {[...Array(5)].map((_, i) => (
-                        <Star key={i} className="h-4 w-4 fill-amber-400 text-amber-400" />
-                      ))}
-                    </div>
-                    <blockquote className="text-sm leading-relaxed flex-1">“{quote}”</blockquote>
-                    <figcaption className="flex items-center gap-3 mt-5 pt-5 border-t">
-                      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-secondary-foreground text-xs font-bold">
-                        {name.split(' ').map(n => n[0]).join('')}
-                      </span>
-                      <div>
-                        <p className="text-sm font-semibold leading-none">{name}</p>
-                        <p className="text-xs text-muted-foreground mt-1">{role}</p>
-                      </div>
-                    </figcaption>
-                  </figure>
-                ))}
-              </Marquee>
-            </div>
+            <TestimonialCarousel />
           </section>
 
           {/* Final CTA */}

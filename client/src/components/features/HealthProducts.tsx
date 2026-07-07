@@ -1,51 +1,53 @@
-import { ShoppingBag, Thermometer, HeartPulse, Activity, Pill, Droplet, Cross } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
+import { useState } from 'react';
+import { Link } from 'react-router-dom';
+import { ShoppingBag, ArrowRight } from 'lucide-react';
 import { BlurFade } from '@/components/ui/blur-fade';
-import { cn } from '@/lib/utils';
+import { Marquee } from '@/components/ui/marquee';
+import { ProductCard } from '@/components/features/ProductCard';
+import { ProductQuickView } from '@/components/features/ProductQuickView';
+import { PRODUCTS, type Product } from '@/data/products';
 
-const PRODUCTS = [
-  { icon: Thermometer, name: 'Digital Thermometer', desc: 'Fast, accurate readings in 10 seconds.', price: 25, tag: 'Best seller' },
-  { icon: HeartPulse, name: 'Blood Pressure Monitor', desc: 'Clinically validated home BP cuff.', price: 120, tag: null },
-  { icon: Activity, name: 'Pulse Oximeter', desc: 'Track SpO₂ and heart rate at home.', price: 60, tag: null },
-  { icon: Cross, name: 'First Aid Kit', desc: '80-piece kit for home and travel.', price: 45, tag: 'New' },
-  { icon: Pill, name: 'Vitamin D3 Supplements', desc: '90 capsules · 2000 IU each.', price: 30, tag: null },
-  { icon: Droplet, name: 'Hand Sanitizer Pack', desc: 'Pack of 5 · 70% alcohol gel.', price: 15, tag: null },
-] as const;
+// A curated selection for the home strip; the full catalog lives on /shop.
+const FEATURED = PRODUCTS.slice(0, 9);
 
 export function HealthProducts() {
-  return (
-    <section className="container py-16">
-      <BlurFade>
-        <div className="mb-8">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-accent/10 text-accent px-3 py-1 text-xs font-semibold mb-3">
-            <ShoppingBag className="h-3.5 w-3.5" /> Health shop
-          </span>
-          <h2 className="text-2xl md:text-3xl font-bold mb-1">Medical products, delivered</h2>
-          <p className="text-muted-foreground text-sm">Trusted health &amp; wellness essentials, brought to your door.</p>
-        </div>
-      </BlurFade>
+  const [quickView, setQuickView] = useState<Product | null>(null);
 
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
-        {PRODUCTS.map(({ icon: Icon, name, desc, price, tag }, i) => (
-          <BlurFade key={name} delay={0.05 * i} className="h-full">
-            <div className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition-all hover:border-primary/40 hover:shadow-lg hover:shadow-primary/5 hover:-translate-y-0.5">
-              <div className={cn('relative flex aspect-[4/3] items-center justify-center bg-linear-to-br', i % 2 ? 'from-accent/15 to-primary/10' : 'from-primary/15 to-accent/10')}>
-                <Icon className="h-14 w-14 text-primary transition-transform group-hover:scale-110" />
-                {tag && <Badge variant="secondary" className="absolute left-3 top-3">{tag}</Badge>}
-              </div>
-              <div className="flex flex-1 flex-col p-4">
-                <h3 className="font-semibold text-sm leading-tight">{name}</h3>
-                <p className="mt-1 flex-1 text-xs text-muted-foreground">{desc}</p>
-                <div className="mt-3 flex items-center justify-between">
-                  <span className="font-bold text-primary">{price} DT</span>
-                  <Button size="sm" variant="outline">Add to cart</Button>
-                </div>
-              </div>
+  return (
+    <section className="overflow-hidden py-16">
+      <div className="container">
+        <BlurFade>
+          <div className="mb-8 flex items-end justify-between gap-4">
+            <div>
+              <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
+                <ShoppingBag className="h-3.5 w-3.5" /> Health shop
+              </span>
+              <h2 className="mb-1 text-2xl font-bold md:text-3xl">Parapharmacie, delivered</h2>
+              <p className="text-sm text-muted-foreground">
+                Devices, supplements, skincare &amp; everyday essentials — hover a product to preview it.
+              </p>
             </div>
-          </BlurFade>
-        ))}
+            <Link
+              to="/shop"
+              className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:underline sm:inline-flex"
+            >
+              Visit the shop <ArrowRight className="h-4 w-4" />
+            </Link>
+          </div>
+        </BlurFade>
       </div>
+
+      <div className="relative">
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 left-0 z-10 w-16 bg-linear-to-r from-background to-transparent md:w-32" />
+        <div aria-hidden className="pointer-events-none absolute inset-y-0 right-0 z-10 w-16 bg-linear-to-l from-background to-transparent md:w-32" />
+        <Marquee pauseOnHover className="[--duration:48s]">
+          {FEATURED.map(product => (
+            <ProductCard key={product.id} product={product} onQuickView={setQuickView} compact />
+          ))}
+        </Marquee>
+      </div>
+
+      <ProductQuickView product={quickView} onClose={() => setQuickView(null)} />
     </section>
   );
 }

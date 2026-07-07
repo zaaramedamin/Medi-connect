@@ -9,6 +9,7 @@ import appointmentRoutes from './routes/appointments';
 import uploadRoutes from './routes/uploads';
 import reviewRoutes from './routes/reviews';
 import adminRoutes from './routes/admin';
+import articleRoutes from './routes/articles';
 import { processReminders } from './services/reminderService';
 
 const app = express();
@@ -58,6 +59,7 @@ app.use('/api/appointments', appointmentRoutes);
 app.use('/api/uploads', uploadRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/articles', articleRoutes);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));

@@ -1,5 +1,8 @@
 import { supabase } from '@/lib/supabase';
-import type { Doctor, Appointment, TimeSlot, Review, AdminDoctor, NewDoctorInput } from '@/types';
+import type {
+  Doctor, Appointment, TimeSlot, Review, AdminDoctor, NewDoctorInput,
+  Article, ArticleDetail, ArticleComment, NewArticleInput,
+} from '@/types';
 
 // In dev this is empty and Vite proxies /api → localhost. In production set
 // VITE_API_URL to the deployed API origin (there is no proxy on a static host).
@@ -95,6 +98,27 @@ export const setDoctorSubscription = (id: string, action: 'activate' | 'deactiva
 
 export const deleteDoctor = (id: string) =>
   apiFetch<void>(`/api/admin/doctors/${id}`, { method: 'DELETE' });
+
+// Community (articles + discussion)
+export const getArticles = (category?: string) => {
+  const qs = category && category !== 'all' ? `?category=${encodeURIComponent(category)}` : '';
+  return apiFetch<Article[]>(`/api/articles${qs}`);
+};
+
+export const getArticle = (id: string | number) =>
+  apiFetch<ArticleDetail>(`/api/articles/${id}`);
+
+export const createArticle = (input: NewArticleInput) =>
+  apiFetch<{ id: number }>('/api/articles', { method: 'POST', body: JSON.stringify(input) });
+
+export const deleteArticle = (id: number) =>
+  apiFetch<void>(`/api/articles/${id}`, { method: 'DELETE' });
+
+export const addArticleComment = (articleId: number, body: string) =>
+  apiFetch<ArticleComment>(`/api/articles/${articleId}/comments`, {
+    method: 'POST',
+    body: JSON.stringify({ body }),
+  });
 
 // Photo upload (base64)
 export const uploadPhoto = async (file: File): Promise<{ url: string }> => {
