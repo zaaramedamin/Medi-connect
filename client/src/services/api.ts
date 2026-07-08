@@ -3,6 +3,7 @@ import type {
   Doctor, Appointment, TimeSlot, Review, AdminDoctor, NewDoctorInput,
   Article, ArticleDetail, ArticleComment, NewArticleInput,
   AdminStats, AdminPatient, Order, OrderItem, AdminOrder,
+  PatientProfile, PatientProfileInput,
 } from '@/types';
 
 // In dev this is empty and Vite proxies /api → localhost. In production set
@@ -99,6 +100,12 @@ export const setDoctorSubscription = (id: string, action: 'activate' | 'deactiva
 
 export const deleteDoctor = (id: string) =>
   apiFetch<void>(`/api/admin/doctors/${id}`, { method: 'DELETE' });
+
+// Patient profile
+export const getMyProfile = () => apiFetch<PatientProfile | null>('/api/profile/me');
+
+export const updateMyProfile = (updates: PatientProfileInput) =>
+  apiFetch<PatientProfile>('/api/profile/me', { method: 'PUT', body: JSON.stringify(updates) });
 
 export const getAdminStats = () => apiFetch<AdminStats>('/api/admin/stats');
 

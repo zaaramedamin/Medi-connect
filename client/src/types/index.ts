@@ -109,6 +109,22 @@ export interface NewArticleInput {
   cover_image?: string;
 }
 
+// ── Patient profile (extra details beyond the auth account) ──────────
+export interface PatientProfile {
+  id: string;
+  phone: string | null;
+  date_of_birth: string | null;
+  gender: 'male' | 'female' | 'other' | null;
+  address: string | null;
+  city: string | null;
+  blood_type: string | null;
+  allergies: string | null;
+  emergency_contact: string | null;
+  updated_at?: string;
+}
+
+export type PatientProfileInput = Partial<Omit<PatientProfile, 'id' | 'updated_at'>>;
+
 // ── Shop orders (demo checkout — no payment) ─────────────────────────
 export interface OrderItem {
   id: string;

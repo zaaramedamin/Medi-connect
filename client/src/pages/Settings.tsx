@@ -1,15 +1,32 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { UserCog, KeyRound } from 'lucide-react';
+import { UserCog, KeyRound, HeartPulse } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
-import { updateDoctorProfile } from '@/services/api';
+import { updateDoctorProfile, getMyProfile, updateMyProfile } from '@/services/api';
+
+const SELECT_CLASS =
+  'h-10 w-full rounded-lg border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
+const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
+
+const profileDetailsSchema = z.object({
+  phone: z.string().max(50).optional(),
+  date_of_birth: z.string().optional(),
+  gender: z.enum(['male', 'female', 'other', '']).optional(),
+  city: z.string().max(100).optional(),
+  address: z.string().max(300).optional(),
+  blood_type: z.string().max(3).optional(),
+  allergies: z.string().max(500).optional(),
+  emergency_contact: z.string().max(150).optional(),
+});
+type ProfileDetailsForm = z.infer<typeof profileDetailsSchema>;
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name is required').max(100),
@@ -104,6 +121,8 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        <ProfileDetailsCard />
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
@@ -136,6 +155,97 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+    </div>
+  );
+}
+
+function ProfileDetailsCard() {
+  const queryClient = useQueryClient();
+  const { data: profile } = useQuery({ queryKey: ['profile', 'me'], queryFn: getMyProfile });
+
+  const { register, handleSubmit, reset } = useForm<ProfileDetailsForm>({
+    resolver: zodResolver(profileDetailsSchema),
+  });
+
+  // Populate the form once the saved profile arrives
+  useEffect(() => {
+    if (profile) {
+      reset({
+        phone: profile.phone ?? '',
+        date_of_birth: profile.date_of_birth ?? '',
+        gender: (profile.gender ?? '') as ProfileDetailsForm['gender'],
+        city: profile.city ?? '',
+        address: profile.address ?? '',
+        blood_type: profile.blood_type ?? '',
+        allergies: profile.allergies ?? '',
+        emergency_contact: profile.emergency_contact ?? '',
+      });
+    }
+  }, [profile, reset]);
+
+  const mutation = useMutation({
+    mutationFn: (data: ProfileDetailsForm) => updateMyProfile({ ...data, gender: data.gender || null }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
+      toast.success('Details saved.');
+    },
+    onError: (e: Error) => toast.error(e.message || 'Failed to save details'),
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <HeartPulse className="h-4 w-4 text-primary" /> Contact &amp; medical details
+        </CardTitle>
+        <CardDescription>Optional — helps doctors prepare for your visit. Only you can see this.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-4" noValidate>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Labeled label="Phone"><Input {...register('phone')} placeholder="+216 …" /></Labeled>
+            <Labeled label="Date of birth"><Input type="date" {...register('date_of_birth')} /></Labeled>
+            <Labeled label="Gender">
+              <select className={SELECT_CLASS} {...register('gender')}>
+                <option value="">Prefer not to say</option>
+                <option value="female">Female</option>
+                <option value="male">Male</option>
+                <option value="other">Other</option>
+              </select>
+            </Labeled>
+            <Labeled label="Blood type">
+              <select className={SELECT_CLASS} {...register('blood_type')}>
+                <option value="">Unknown</option>
+                {BLOOD_TYPES.map(b => <option key={b} value={b}>{b}</option>)}
+              </select>
+            </Labeled>
+            <Labeled label="City"><Input {...register('city')} placeholder="Tunis" /></Labeled>
+            <Labeled label="Emergency contact"><Input {...register('emergency_contact')} placeholder="Name · phone" /></Labeled>
+          </div>
+          <Labeled label="Address"><Input {...register('address')} placeholder="Street, city" /></Labeled>
+          <Labeled label="Allergies & notes">
+            <textarea
+              {...register('allergies')}
+              rows={3}
+              maxLength={500}
+              placeholder="Allergies, chronic conditions, medication…"
+              className="w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+            />
+          </Labeled>
+          <Button type="submit" disabled={mutation.isPending}>
+            {mutation.isPending ? 'Saving…' : 'Save details'}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1">
+      <label className="text-sm font-medium">{label}</label>
+      {children}
     </div>
   );
 }
