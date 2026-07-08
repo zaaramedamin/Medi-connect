@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
+import { AuthShell } from '@/components/layout/AuthShell';
 import { useT } from '@/i18n';
 
 const schema = z.object({
@@ -37,8 +38,8 @@ export default function ForgotPassword() {
   };
 
   return (
-    <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center py-8">
-      <Card className="w-full max-w-md">
+    <AuthShell>
+      <Card className="w-full max-w-md border-0 shadow-none">
         <CardHeader className="text-center">
           <div className="mb-2 flex justify-center">
             <KeyRound className="h-8 w-8 text-primary" />
@@ -84,6 +85,6 @@ export default function ForgotPassword() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AuthShell>
   );
 }

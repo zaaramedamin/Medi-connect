@@ -24,6 +24,7 @@ import {
 import type { AdminDoctor, Order } from '@/types';
 import { ARTICLE_CATEGORY_META } from '@/data/articleMeta';
 import { formatDT } from '@/data/products';
+import { useT } from '@/i18n';
 import { formatDate, cn } from '@/lib/utils';
 
 type Tab = 'overview' | 'doctors' | 'patients' | 'sales' | 'posts';
@@ -37,15 +38,16 @@ const TABS: { value: Tab; label: string; icon: typeof LayoutDashboard }[] = [
 ];
 
 export default function AdminDashboard() {
+  const t = useT();
   const [tab, setTab] = useState<Tab>('overview');
 
   return (
     <div className="container max-w-5xl py-8">
       <div className="mb-6">
         <h1 className="flex items-center gap-2 text-2xl font-bold">
-          <ShieldCheck className="h-6 w-6 text-primary" /> Admin Dashboard
+          <ShieldCheck className="h-6 w-6 text-primary" /> {t('Admin Dashboard')}
         </h1>
-        <p className="text-muted-foreground">Manage doctors, patients, posts, and see how the platform is performing.</p>
+        <p className="text-muted-foreground">{t('Manage doctors, patients, posts, and see how the platform is performing.')}</p>
       </div>
 
       {/* Tabs */}
@@ -59,7 +61,7 @@ export default function AdminDashboard() {
               tab === value ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
             )}
           >
-            <Icon className="h-4 w-4" /> {label}
+            <Icon className="h-4 w-4" /> {t(label)}
           </button>
         ))}
       </div>
@@ -77,6 +79,7 @@ export default function AdminDashboard() {
 const WEEKDAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 function OverviewTab() {
+  const t = useT();
   const { data: stats, isLoading } = useQuery({ queryKey: ['admin', 'stats'], queryFn: getAdminStats });
 
   if (isLoading || !stats) {
@@ -88,10 +91,10 @@ function OverviewTab() {
   }
 
   const statCards = [
-    { label: 'Doctors', value: stats.totals.doctors, sub: `${stats.totals.activeDoctors} active`, icon: Stethoscope },
-    { label: 'Patients', value: stats.totals.patients, sub: 'registered', icon: Users },
-    { label: 'Appointments', value: stats.totals.appointments, sub: `${stats.totals.upcoming} upcoming`, icon: CalendarCheck },
-    { label: 'Completed visits', value: stats.totals.completed, sub: 'all time', icon: Activity },
+    { label: t('Doctors'), value: stats.totals.doctors, sub: `${stats.totals.activeDoctors} ${t('active')}`, icon: Stethoscope },
+    { label: t('Patients'), value: stats.totals.patients, sub: t('registered'), icon: Users },
+    { label: t('Appointments'), value: stats.totals.appointments, sub: `${stats.totals.upcoming} ${t('upcoming')}`, icon: CalendarCheck },
+    { label: t('Completed visits'), value: stats.totals.completed, sub: t('all time'), icon: Activity },
   ];
 
   const maxHour = Math.max(...stats.hourly.map(h => h.count), 1);
@@ -116,19 +119,19 @@ function OverviewTab() {
 
       {/* Revenue */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <RevenueCard label="Total revenue" value={stats.revenue.total} icon={Wallet} highlight />
-        <RevenueCard label="Consultations" value={stats.revenue.consultation} icon={TrendingUp} />
-        <RevenueCard label="Subscriptions" value={stats.revenue.subscription} icon={ShieldCheck} />
-        <RevenueCard label="Shop sales" value={stats.revenue.shop} icon={ShoppingBag} />
+        <RevenueCard label={t('Total revenue')} value={stats.revenue.total} icon={Wallet} highlight />
+        <RevenueCard label={t('Consultations')} value={stats.revenue.consultation} icon={TrendingUp} />
+        <RevenueCard label={t('Subscriptions')} value={stats.revenue.subscription} icon={ShieldCheck} />
+        <RevenueCard label={t('Shop sales')} value={stats.revenue.shop} icon={ShoppingBag} />
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Top doctors by reservations */}
         <Card>
-          <CardHeader><CardTitle className="text-base">Most-booked doctors</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="text-base">{t('Most-booked doctors')}</CardTitle></CardHeader>
           <CardContent className="space-y-3">
             {stats.topDoctors.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No reservations yet.</p>
+              <p className="text-sm text-muted-foreground">{t('No reservations yet.')}</p>
             ) : (
               stats.topDoctors.map((d, i) => {
                 const pct = (d.reservations / (stats.topDoctors[0].reservations || 1)) * 100;
@@ -155,9 +158,9 @@ function OverviewTab() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between text-base">
-              Peak booking hours
+              {t('Peak booking hours')}
               <span className="flex items-center gap-1 text-xs font-normal text-muted-foreground">
-                <Clock className="h-3.5 w-3.5" /> busiest: {String(stats.peakHour.hour).padStart(2, '0')}:00
+                <Clock className="h-3.5 w-3.5" /> {t('busiest')}: {String(stats.peakHour.hour).padStart(2, '0')}:00
               </span>
             </CardTitle>
           </CardHeader>
@@ -176,14 +179,14 @@ function OverviewTab() {
                 </div>
               ))}
             </div>
-            <p className="mt-3 text-xs text-muted-foreground">Reservations by hour of day (07:00–21:00).</p>
+            <p className="mt-3 text-xs text-muted-foreground">{t('Reservations by hour of day (07:00–21:00).')}</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Weekday distribution */}
       <Card>
-        <CardHeader><CardTitle className="text-base">Bookings by day of week</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('Bookings by day of week')}</CardTitle></CardHeader>
         <CardContent>
           <div className="grid grid-cols-7 gap-2">
             {WEEKDAYS.map((label, i) => (
@@ -231,6 +234,7 @@ type NewDoctorForm = z.input<typeof newDoctorSchema>;
 type NewDoctorParsed = z.output<typeof newDoctorSchema>;
 
 function DoctorsTab() {
+  const t = useT();
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<AdminDoctor | null>(null);
@@ -244,17 +248,17 @@ function DoctorsTab() {
 
   const createMutation = useMutation({
     mutationFn: createDoctor,
-    onSuccess: () => { invalidate(); setAddOpen(false); reset(); toast.success('Doctor onboarded.'); },
+    onSuccess: () => { invalidate(); setAddOpen(false); reset(); toast.success(t('Doctor onboarded.')); },
     onError: (e: Error) => setFormError(e.message),
   });
   const subMutation = useMutation({
     mutationFn: ({ id, action }: { id: string; action: 'activate' | 'deactivate' }) => setDoctorSubscription(id, action),
-    onSuccess: d => { invalidate(); toast.success(d.subscription_status === 'active' ? 'Subscription activated.' : 'Subscription deactivated.'); },
+    onSuccess: d => { invalidate(); toast.success(d.subscription_status === 'active' ? t('Subscription activated.') : t('Subscription deactivated.')); },
     onError: (e: Error) => toast.error(e.message),
   });
   const deleteMutation = useMutation({
     mutationFn: deleteDoctor,
-    onSuccess: () => { invalidate(); toast.success('Doctor deleted.'); },
+    onSuccess: () => { invalidate(); toast.success(t('Doctor deleted.')); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -271,7 +275,7 @@ function DoctorsTab() {
     <>
       <div className="mb-4 flex justify-end">
         <Button onClick={() => { setFormError(null); setAddOpen(true); }}>
-          <UserPlus className="mr-1.5 h-4 w-4" /> Onboard doctor
+          <UserPlus className="mr-1.5 h-4 w-4" /> {t('Onboard doctor')}
         </Button>
       </div>
 
@@ -292,12 +296,12 @@ function DoctorsTab() {
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-semibold">{doc.name}</p>
                     <p className="truncate text-sm text-muted-foreground">
-                      {doc.specialty ?? 'No specialty'}{doc.location ? ` · ${doc.location}` : ''}
+                      {doc.specialty ?? t('No specialty')}{doc.location ? ` · ${doc.location}` : ''}
                     </p>
                   </div>
                   <div className="mr-2 text-right">
                     <Badge variant={active ? 'success' : 'secondary'} className="capitalize">{doc.subscription_status}</Badge>
-                    {doc.subscription_expires && <p className="mt-1 text-xs text-muted-foreground">until {formatDate(doc.subscription_expires)}</p>}
+                    {doc.subscription_expires && <p className="mt-1 text-xs text-muted-foreground">{t('until')} {formatDate(doc.subscription_expires)}</p>}
                   </div>
                   <div className="flex gap-2">
                     <Button variant="ghost" size="icon" onClick={() => setEditing(doc)} aria-label={`Edit ${doc.name}`}>
@@ -305,11 +309,11 @@ function DoctorsTab() {
                     </Button>
                     {active ? (
                       <Button variant="outline" size="sm" onClick={() => subMutation.mutate({ id: doc.id, action: 'deactivate' })} disabled={subMutation.isPending}>
-                        <ShieldOff className="mr-1 h-4 w-4" /> Deactivate
+                        <ShieldOff className="mr-1 h-4 w-4" /> {t('Deactivate')}
                       </Button>
                     ) : (
                       <Button size="sm" onClick={() => subMutation.mutate({ id: doc.id, action: 'activate' })} disabled={subMutation.isPending}>
-                        <ShieldCheck className="mr-1 h-4 w-4" /> Activate
+                        <ShieldCheck className="mr-1 h-4 w-4" /> {t('Activate')}
                       </Button>
                     )}
                     <Button
@@ -323,7 +327,7 @@ function DoctorsTab() {
                 </div>
               );
             })}
-            {doctors?.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No doctors yet. Onboard your first one.</p>}
+            {doctors?.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">{t('No doctors yet. Onboard your first one.')}</p>}
           </CardContent>
         </Card>
       )}
@@ -331,25 +335,25 @@ function DoctorsTab() {
       <Dialog open={addOpen} onOpenChange={setAddOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2"><Stethoscope className="h-5 w-5 text-primary" /> Onboard a doctor</DialogTitle>
-            <DialogDescription>Creates a login account and an active 1-year subscription.</DialogDescription>
+            <DialogTitle className="flex items-center gap-2"><Stethoscope className="h-5 w-5 text-primary" /> {t('Onboard a doctor')}</DialogTitle>
+            <DialogDescription>{t('Creates a login account and an active 1-year subscription.')}</DialogDescription>
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Full name" error={errors.name?.message}><Input {...register('name')} placeholder="Dr. Jane Smith" /></Field>
-              <Field label="Specialty" error={errors.specialty?.message}><Input {...register('specialty')} placeholder="Cardiology" /></Field>
+              <Field label={t('Full name')} error={errors.name?.message}><Input {...register('name')} placeholder="Dr. Jane Smith" /></Field>
+              <Field label={t('Specialty')} error={errors.specialty?.message}><Input {...register('specialty')} placeholder="Cardiology" /></Field>
             </div>
-            <Field label="Email" error={errors.email?.message}><Input type="email" {...register('email')} placeholder="doctor@clinic.tn" /></Field>
-            <Field label="Temporary password" error={errors.password?.message}><Input type="text" {...register('password')} placeholder="Min 8 characters" /></Field>
+            <Field label={t('Email')} error={errors.email?.message}><Input type="email" {...register('email')} placeholder="doctor@clinic.tn" /></Field>
+            <Field label={t('Temporary password')} error={errors.password?.message}><Input type="text" {...register('password')} placeholder="Min 8 characters" /></Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="City" error={errors.location?.message}><Input {...register('location')} placeholder="Tunis" /></Field>
-              <Field label="Cost (DT)" error={errors.cost?.message}><Input type="number" {...register('cost')} placeholder="60" /></Field>
+              <Field label={t('City')} error={errors.location?.message}><Input {...register('location')} placeholder="Tunis" /></Field>
+              <Field label={t('Cost (DT)')} error={errors.cost?.message}><Input type="number" {...register('cost')} placeholder="60" /></Field>
             </div>
             {formError && <p className="text-sm text-destructive">{formError}</p>}
             <div className="flex gap-2 pt-1">
-              <Button type="button" variant="outline" className="flex-1" onClick={() => setAddOpen(false)}>Cancel</Button>
+              <Button type="button" variant="outline" className="flex-1" onClick={() => setAddOpen(false)}>{t('Cancel')}</Button>
               <Button type="submit" className="flex-1" disabled={createMutation.isPending}>
-                {createMutation.isPending ? 'Creating...' : 'Create doctor'}
+                {createMutation.isPending ? t('Creating...') : t('Create doctor')}
               </Button>
             </div>
           </form>
@@ -373,6 +377,7 @@ type EditDoctorForm = z.input<typeof editDoctorSchema>;
 type EditDoctorParsed = z.output<typeof editDoctorSchema>;
 
 function EditDoctorDialog({ doctor, onClose, onSaved }: { doctor: AdminDoctor; onClose: () => void; onSaved: () => void }) {
+  const t = useT();
   const { register, handleSubmit, formState: { errors } } = useForm<EditDoctorForm, unknown, EditDoctorParsed>({
     resolver: zodResolver(editDoctorSchema),
     defaultValues: {
@@ -385,7 +390,7 @@ function EditDoctorDialog({ doctor, onClose, onSaved }: { doctor: AdminDoctor; o
 
   const updateMutation = useMutation({
     mutationFn: (data: EditDoctorParsed) => updateDoctor(doctor.id, data),
-    onSuccess: () => { onSaved(); onClose(); toast.success('Doctor updated.'); },
+    onSuccess: () => { onSaved(); onClose(); toast.success(t('Doctor updated.')); },
     onError: (e: Error) => toast.error(e.message),
   });
 
@@ -393,22 +398,22 @@ function EditDoctorDialog({ doctor, onClose, onSaved }: { doctor: AdminDoctor; o
     <Dialog open onOpenChange={open => { if (!open) onClose(); }}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4 text-primary" /> Edit {doctor.name}</DialogTitle>
-          <DialogDescription>Changes are visible to patients immediately.</DialogDescription>
+          <DialogTitle className="flex items-center gap-2"><Pencil className="h-4 w-4 text-primary" /> {t('Edit')} {doctor.name}</DialogTitle>
+          <DialogDescription>{t('Changes are visible to patients immediately.')}</DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit(data => updateMutation.mutate(data))} className="space-y-3" noValidate>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Full name" error={errors.name?.message}><Input {...register('name')} /></Field>
-            <Field label="Specialty" error={errors.specialty?.message}><Input {...register('specialty')} /></Field>
+            <Field label={t('Full name')} error={errors.name?.message}><Input {...register('name')} /></Field>
+            <Field label={t('Specialty')} error={errors.specialty?.message}><Input {...register('specialty')} /></Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="City" error={errors.location?.message}><Input {...register('location')} /></Field>
-            <Field label="Cost (DT)" error={errors.cost?.message}><Input type="number" {...register('cost')} /></Field>
+            <Field label={t('City')} error={errors.location?.message}><Input {...register('location')} /></Field>
+            <Field label={t('Cost (DT)')} error={errors.cost?.message}><Input type="number" {...register('cost')} /></Field>
           </div>
           <div className="flex gap-2 pt-1">
-            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>Cancel</Button>
+            <Button type="button" variant="outline" className="flex-1" onClick={onClose}>{t('Cancel')}</Button>
             <Button type="submit" className="flex-1" disabled={updateMutation.isPending}>
-              {updateMutation.isPending ? 'Saving…' : 'Save changes'}
+              {updateMutation.isPending ? t('Saving…') : t('Save changes')}
             </Button>
           </div>
         </form>
@@ -419,6 +424,7 @@ function EditDoctorDialog({ doctor, onClose, onSaved }: { doctor: AdminDoctor; o
 
 // ── Patients management ──────────────────────────────────────────────
 function PatientsTab() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data: patients, isLoading } = useQuery({ queryKey: ['admin', 'patients'], queryFn: getAdminPatients });
   const deleteMutation = useMutation({
@@ -426,7 +432,7 @@ function PatientsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'patients'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-      toast.success('Patient deleted.');
+      toast.success(t('Patient deleted.'));
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -435,7 +441,7 @@ function PatientsTab() {
 
   return (
     <Card>
-      <CardHeader><CardTitle className="text-base">Patients ({patients?.length ?? 0})</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="text-base">{t('Patients')} ({patients?.length ?? 0})</CardTitle></CardHeader>
       <CardContent className="divide-y p-0">
         {patients?.map(p => {
           const initials = p.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
@@ -449,8 +455,8 @@ function PatientsTab() {
                 <p className="truncate text-sm text-muted-foreground">{p.email}</p>
               </div>
               <div className="mr-2 text-right text-sm">
-                <p className="font-medium">{p.appointments} booking{p.appointments !== 1 ? 's' : ''}</p>
-                <p className="text-xs text-muted-foreground">joined {formatDate(p.created_at)}</p>
+                <p className="font-medium">{p.appointments} {t(p.appointments !== 1 ? 'bookings' : 'booking')}</p>
+                <p className="text-xs text-muted-foreground">{t('joined')} {formatDate(p.created_at)}</p>
               </div>
               <Button
                 variant="ghost" size="icon" className="text-destructive hover:text-destructive"
@@ -462,7 +468,7 @@ function PatientsTab() {
             </div>
           );
         })}
-        {patients?.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No patients registered yet.</p>}
+        {patients?.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">{t('No patients registered yet.')}</p>}
       </CardContent>
     </Card>
   );
@@ -476,6 +482,7 @@ const ORDER_STATUS_STYLE: Record<Order['status'], 'secondary' | 'success' | 'des
 };
 
 function SalesTab() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data: orders, isLoading } = useQuery({ queryKey: ['admin', 'orders'], queryFn: getAdminOrders });
 
@@ -484,7 +491,7 @@ function SalesTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-      toast.success('Order updated.');
+      toast.success(t('Order updated.'));
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -499,17 +506,17 @@ function SalesTab() {
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-3">
-        <RevenueCard label="Shop revenue" value={revenue} icon={ShoppingBag} highlight />
+        <RevenueCard label={t('Shop revenue')} value={revenue} icon={ShoppingBag} highlight />
         <div className="rounded-2xl border bg-card p-5">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Orders</span>
+            <span className="text-sm text-muted-foreground">{t('Orders')}</span>
             <Package className="h-4 w-4 text-primary" />
           </div>
           <p className="font-display text-2xl font-extrabold">{active.length}</p>
         </div>
         <div className="rounded-2xl border bg-card p-5">
           <div className="mb-2 flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">Avg order</span>
+            <span className="text-sm text-muted-foreground">{t('Avg order')}</span>
             <TrendingUp className="h-4 w-4 text-primary" />
           </div>
           <p className="font-display text-2xl font-extrabold">
@@ -519,18 +526,18 @@ function SalesTab() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle className="text-base">Orders</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-base">{t('Orders')}</CardTitle></CardHeader>
         <CardContent className="divide-y p-0">
           {orders?.map(o => (
             <div key={o.id} className="flex flex-wrap items-center gap-4 p-4">
               <div className="min-w-0 flex-1">
                 <p className="font-semibold">{o.reference}</p>
                 <p className="truncate text-sm text-muted-foreground">
-                  {o.customer_name} · {o.items.reduce((n, i) => n + i.quantity, 0)} items · {formatDate(o.created_at)}
+                  {o.customer_name} · {o.items.reduce((n, i) => n + i.quantity, 0)} {t('items')} · {formatDate(o.created_at)}
                 </p>
               </div>
               <span className="font-bold text-primary">{formatDT(Number(o.total))}</span>
-              <Badge variant={ORDER_STATUS_STYLE[o.status]} className="capitalize">{o.status}</Badge>
+              <Badge variant={ORDER_STATUS_STYLE[o.status]} className="capitalize">{t(o.status)}</Badge>
               <select
                 value={o.status}
                 onChange={e => statusMutation.mutate({ id: o.id, status: e.target.value as Order['status'] })}
@@ -538,15 +545,15 @@ function SalesTab() {
                 className="h-9 cursor-pointer rounded-lg border bg-card px-2 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 aria-label={`Update status of ${o.reference}`}
               >
-                <option value="placed">Placed</option>
-                <option value="delivered">Delivered</option>
-                <option value="cancelled">Cancelled</option>
+                <option value="placed">{t('Placed')}</option>
+                <option value="delivered">{t('Delivered')}</option>
+                <option value="cancelled">{t('Cancelled')}</option>
               </select>
             </div>
           ))}
           {orders?.length === 0 && (
             <p className="p-8 text-center text-sm text-muted-foreground">
-              No orders yet. They appear here once patients check out from the shop.
+              {t('No orders yet. They appear here once patients check out from the shop.')}
             </p>
           )}
         </CardContent>
@@ -557,6 +564,7 @@ function SalesTab() {
 
 // ── Posts management ─────────────────────────────────────────────────
 function PostsTab() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data: articles, isLoading } = useQuery({ queryKey: ['articles', 'all'], queryFn: () => getArticles() });
   const deleteMutation = useMutation({
@@ -564,7 +572,7 @@ function PostsTab() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       queryClient.invalidateQueries({ queryKey: ['admin', 'stats'] });
-      toast.success('Post deleted.');
+      toast.success(t('Post deleted.'));
     },
     onError: (e: Error) => toast.error(e.message),
   });
@@ -572,7 +580,7 @@ function PostsTab() {
   return (
     <>
       <div className="mb-4 flex justify-end">
-        <Button asChild><Link to="/community/new"><PenSquare className="mr-1.5 h-4 w-4" /> Write a post</Link></Button>
+        <Button asChild><Link to="/community/new"><PenSquare className="mr-1.5 h-4 w-4" /> {t('Write a post')}</Link></Button>
       </div>
       {isLoading ? (
         <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}</div>
@@ -586,10 +594,10 @@ function PostsTab() {
                   <div className="min-w-0 flex-1">
                     <Link to={`/community/${a.id}`} className="truncate font-semibold hover:text-primary">{a.title}</Link>
                     <p className="truncate text-sm text-muted-foreground">
-                      {a.author.name} · {a.comment_count} comment{a.comment_count !== 1 ? 's' : ''}
+                      {a.author.name} · {a.comment_count} {t(a.comment_count !== 1 ? 'comments' : 'comment')}
                     </p>
                   </div>
-                  <Badge variant="secondary" className={cn('shrink-0', meta.badge)}>{meta.label}</Badge>
+                  <Badge variant="secondary" className={cn('shrink-0', meta.badge)}>{t(meta.label)}</Badge>
                   <Button
                     variant="ghost" size="icon" className="text-destructive hover:text-destructive"
                     onClick={() => { if (confirm(`Delete “${a.title}”? This cannot be undone.`)) deleteMutation.mutate(a.id); }}
@@ -600,7 +608,7 @@ function PostsTab() {
                 </div>
               );
             })}
-            {articles?.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">No posts yet.</p>}
+            {articles?.length === 0 && <p className="p-8 text-center text-sm text-muted-foreground">{t('No posts yet.')}</p>}
           </CardContent>
         </Card>
       )}

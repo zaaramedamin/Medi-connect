@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/authStore';
+import { AuthShell } from '@/components/layout/AuthShell';
 import { useT } from '@/i18n';
 import { useState } from 'react';
 
@@ -39,8 +40,8 @@ export default function Login() {
   };
 
   return (
-    <div className="container flex items-center justify-center min-h-[calc(100vh-8rem)] py-8">
-      <Card className="w-full max-w-md">
+    <AuthShell>
+      <Card className="w-full max-w-md border-0 shadow-none">
         <CardHeader className="text-center">
           <div className="flex justify-center mb-2">
             <Stethoscope className="h-8 w-8 text-primary" />
@@ -82,6 +83,6 @@ export default function Login() {
           </p>
         </CardContent>
       </Card>
-    </div>
+    </AuthShell>
   );
 }

@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
 import { ARTICLE_CATEGORY_META, articleCover, formatArticleDate } from '@/data/articleMeta';
+import { useT } from '@/i18n';
 import type { Article } from '@/types';
 import { cn } from '@/lib/utils';
 
 export function ArticleCard({ article }: { article: Article }) {
+  const t = useT();
   const meta = ARTICLE_CATEGORY_META[article.category];
   const Icon = meta.icon;
 
@@ -21,7 +23,7 @@ export function ArticleCard({ article }: { article: Article }) {
           className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
         />
         <span className={cn('absolute left-3 top-3 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold shadow-sm', meta.badge)}>
-          <Icon className="h-3 w-3" /> {meta.label}
+          <Icon className="h-3 w-3" /> {t(meta.label)}
         </span>
       </div>
 
@@ -34,7 +36,7 @@ export function ArticleCard({ article }: { article: Article }) {
           <div className="min-w-0 flex-1">
             <p className="truncate text-xs font-semibold">{article.author.name}</p>
             <p className="truncate text-[11px] text-muted-foreground">
-              {article.author.specialty ?? 'Doctor'} · {formatArticleDate(article.created_at)}
+              {article.author.specialty ?? t('Doctor')} · {formatArticleDate(article.created_at)}
             </p>
           </div>
           <span className="flex shrink-0 items-center gap-1 text-xs text-muted-foreground">

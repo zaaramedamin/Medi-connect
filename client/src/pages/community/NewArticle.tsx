@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { BlurFade } from '@/components/ui/blur-fade';
 import { createArticle } from '@/services/api';
+import { useT } from '@/i18n';
 import type { ArticleCategory } from '@/types';
 
 const CATEGORY_OPTIONS: { value: ArticleCategory; label: string; hint: string }[] = [
@@ -19,6 +20,7 @@ const FIELD = 'w-full rounded-xl border bg-card px-4 py-2.5 text-sm focus-visibl
 
 export default function NewArticle() {
   const navigate = useNavigate();
+  const t = useT();
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState<ArticleCategory>('advice');
   const [excerpt, setExcerpt] = useState('');
@@ -43,16 +45,16 @@ export default function NewArticle() {
     <div className="animate-fade-in">
       <div className="container max-w-2xl py-8 md:py-12">
         <Link to="/community" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Community
+          <ArrowLeft className="h-4 w-4" /> {t('Community')}
         </Link>
 
         <BlurFade>
           <div className="mt-6 mb-8">
             <h1 className="flex items-center gap-2 text-2xl font-bold md:text-3xl">
-              <PenSquare className="h-6 w-6 text-primary" /> Write an article
+              <PenSquare className="h-6 w-6 text-primary" /> {t('Write an article')}
             </h1>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              Share a report, advice, or open a discussion. This is published publicly under your name.
+              {t('Share a report, advice, or open a discussion. This is published publicly under your name.')}
             </p>
           </div>
         </BlurFade>
@@ -65,11 +67,11 @@ export default function NewArticle() {
           }}
         >
           <div>
-            <label htmlFor="title" className={LABEL}>Title</label>
+            <label htmlFor="title" className={LABEL}>{t('Title')}</label>
             <Input
               id="title"
               className="h-11 rounded-xl"
-              placeholder="e.g. Understanding your blood pressure numbers"
+              placeholder={t('e.g. Understanding your blood pressure numbers')}
               value={title}
               onChange={e => setTitle(e.target.value)}
               maxLength={160}
@@ -77,7 +79,7 @@ export default function NewArticle() {
           </div>
 
           <div>
-            <span className={LABEL}>Category</span>
+            <span className={LABEL}>{t('Category')}</span>
             <div className="grid gap-2 sm:grid-cols-3">
               {CATEGORY_OPTIONS.map(opt => (
                 <button
@@ -88,8 +90,8 @@ export default function NewArticle() {
                     category === opt.value ? 'border-primary bg-primary/5' : 'hover:border-primary/40'
                   }`}
                 >
-                  <span className="block text-sm font-semibold">{opt.label}</span>
-                  <span className="mt-0.5 block text-xs text-muted-foreground">{opt.hint}</span>
+                  <span className="block text-sm font-semibold">{t(opt.label)}</span>
+                  <span className="mt-0.5 block text-xs text-muted-foreground">{t(opt.hint)}</span>
                 </button>
               ))}
             </div>
@@ -97,12 +99,12 @@ export default function NewArticle() {
 
           <div>
             <label htmlFor="excerpt" className={LABEL}>
-              Short summary <span className="font-normal text-muted-foreground">(optional)</span>
+              {t('Short summary')} <span className="font-normal text-muted-foreground">{t('(optional)')}</span>
             </label>
             <Input
               id="excerpt"
               className="h-11 rounded-xl"
-              placeholder="One or two sentences shown on the article card."
+              placeholder={t('One or two sentences shown on the article card.')}
               value={excerpt}
               onChange={e => setExcerpt(e.target.value)}
               maxLength={300}
@@ -111,7 +113,7 @@ export default function NewArticle() {
 
           <div>
             <label htmlFor="cover" className={LABEL}>
-              Cover image URL <span className="font-normal text-muted-foreground">(optional)</span>
+              {t('Cover image URL')} <span className="font-normal text-muted-foreground">{t('(optional)')}</span>
             </label>
             <Input
               id="cover"
@@ -124,30 +126,30 @@ export default function NewArticle() {
           </div>
 
           <div>
-            <label htmlFor="body" className={LABEL}>Article</label>
+            <label htmlFor="body" className={LABEL}>{t('Article')}</label>
             <textarea
               id="body"
               rows={12}
               className={`${FIELD} resize-y leading-relaxed`}
-              placeholder="Write your article here. Leave a blank line between paragraphs."
+              placeholder={t('Write your article here. Leave a blank line between paragraphs.')}
               value={body}
               onChange={e => setBody(e.target.value)}
               maxLength={8000}
             />
-            <p className="mt-1 text-xs text-muted-foreground">{body.length}/8000 characters</p>
+            <p className="mt-1 text-xs text-muted-foreground">{body.length}/8000 {t('characters')}</p>
           </div>
 
           {mutation.isError && (
-            <p className="text-sm text-destructive">Could not publish. Please check your input and try again.</p>
+            <p className="text-sm text-destructive">{t('Could not publish. Please check your input and try again.')}</p>
           )}
 
           <div className="flex items-center gap-3 pt-1">
             <Button type="submit" size="lg" disabled={!canSubmit || mutation.isPending}>
               {mutation.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <PenSquare className="mr-1.5 h-4 w-4" />}
-              Publish
+              {t('Publish')}
             </Button>
             <Button type="button" variant="ghost" size="lg" asChild>
-              <Link to="/community">Cancel</Link>
+              <Link to="/community">{t('Cancel')}</Link>
             </Button>
           </div>
         </form>

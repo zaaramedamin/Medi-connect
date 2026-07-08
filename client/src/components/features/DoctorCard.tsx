@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { TiltCard } from '@/components/ui/tilt-card';
 import { StarRating } from '@/components/ui/star-rating';
+import { useT } from '@/i18n';
 import type { Doctor } from '@/types';
 
 interface Props {
@@ -13,6 +14,7 @@ interface Props {
 }
 
 export function DoctorCard({ doctor }: Props) {
+  const t = useT();
   const initials = doctor.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
   return (
@@ -52,14 +54,14 @@ export function DoctorCard({ doctor }: Props) {
           )}
           {doctor.cost != null && (
             <span className="ml-auto text-sm font-bold text-foreground">
-              {doctor.cost} <span className="text-xs font-medium text-muted-foreground">DT / visit</span>
+              {doctor.cost} <span className="text-xs font-medium text-muted-foreground">{t('DT / visit')}</span>
             </span>
           )}
         </div>
 
         <Button asChild size="sm" className="w-full group/btn">
           <Link to={`/doctor/${doctor.id}`}>
-            View profile &amp; book
+            {t('View profile & book')}
             <ArrowRight className="h-4 w-4 ml-1 transition-transform group-hover/btn:translate-x-0.5" />
           </Link>
         </Button>

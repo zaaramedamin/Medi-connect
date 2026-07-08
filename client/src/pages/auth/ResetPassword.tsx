@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { AuthShell } from '@/components/layout/AuthShell';
 import { useT } from '@/i18n';
 
 const schema = z
@@ -56,8 +57,8 @@ export default function ResetPassword() {
   const noSession = ready && !loading && !user;
 
   return (
-    <div className="container flex min-h-[calc(100vh-8rem)] items-center justify-center py-8">
-      <Card className="w-full max-w-md">
+    <AuthShell>
+      <Card className="w-full max-w-md border-0 shadow-none">
         <CardHeader className="text-center">
           <div className="mb-2 flex justify-center">
             <ShieldCheck className="h-8 w-8 text-primary" />
@@ -99,6 +100,6 @@ export default function ResetPassword() {
           )}
         </CardContent>
       </Card>
-    </div>
+    </AuthShell>
   );
 }

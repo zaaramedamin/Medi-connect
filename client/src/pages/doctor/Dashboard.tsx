@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useT } from '@/i18n';
 import { formatDate, formatTime, cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 
@@ -35,6 +36,7 @@ export default function DoctorDashboard() {
   const { user, signOut } = useAuthStore();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const t = useT();
   const [tab, setTab] = useState<Tab>('profile');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -85,7 +87,7 @@ export default function DoctorDashboard() {
   };
 
   const handleDelete = () => {
-    if (confirm('Delete your account permanently? This cannot be undone.')) {
+    if (confirm(t('Delete your account permanently? This cannot be undone.'))) {
       deleteMutation.mutate();
     }
   };
@@ -95,23 +97,23 @@ export default function DoctorDashboard() {
   return (
     <div className="container py-8 max-w-5xl">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">Doctor Dashboard</h1>
-        <p className="text-muted-foreground">Manage your profile and appointments</p>
+        <h1 className="text-2xl font-bold">{t('Doctor Dashboard')}</h1>
+        <p className="text-muted-foreground">{t('Manage your profile and appointments')}</p>
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">
-        {(['profile', 'appointments'] as Tab[]).map(t => (
+        {(['profile', 'appointments'] as Tab[]).map(tabKey => (
           <button
-            key={t}
+            key={tabKey}
             type="button"
-            onClick={() => setTab(t)}
+            onClick={() => setTab(tabKey)}
             className={cn(
-              'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors capitalize',
-              tab === t ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
+              tab === tabKey ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             )}
           >
-            {t === 'appointments' ? `Appointments (${appointments?.length ?? 0})` : 'Profile'}
+            {tabKey === 'appointments' ? `${t('Appointments')} (${appointments?.length ?? 0})` : t('Profile')}
           </button>
         ))}
       </div>
@@ -131,9 +133,9 @@ export default function DoctorDashboard() {
               </Avatar>
               <div>
                 <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-                  <Upload className="h-4 w-4 mr-2" />Change photo
+                  <Upload className="h-4 w-4 mr-2" />{t('Change photo')}
                 </Button>
-                <p className="text-xs text-muted-foreground mt-1">JPEG, PNG, or WebP — max 5 MB</p>
+                <p className="text-xs text-muted-foreground mt-1">{t('JPEG, PNG, or WebP — max 5 MB')}</p>
                 <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" className="hidden" onChange={handlePhotoChange} />
               </div>
             </CardContent>
@@ -141,23 +143,23 @@ export default function DoctorDashboard() {
 
           {/* Profile fields */}
           <Card>
-            <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5" />Personal info</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="flex items-center gap-2"><User className="h-5 w-5" />{t('Personal info')}</CardTitle></CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <Field label="Full name" error={errors.name?.message}><Input {...register('name')} /></Field>
-              <Field label="Phone" error={errors.phone?.message}><Input {...register('phone')} type="tel" /></Field>
-              <Field label="Specialty" error={errors.specialty?.message}><Input {...register('specialty')} /></Field>
-              <Field label="Location" error={errors.location?.message}><Input {...register('location')} /></Field>
-              <Field label="Consultation cost ($)" error={errors.cost?.message}><Input {...register('cost')} type="number" min="0" /></Field>
-              <Field label="Session duration (min)" error={errors.avg_consultation_time?.message}><Input {...register('avg_consultation_time')} type="number" min="10" max="240" /></Field>
-              <Field label="Working hours start" error={errors.working_hours_start?.message}><Input {...register('working_hours_start')} type="time" /></Field>
-              <Field label="Working hours end" error={errors.working_hours_end?.message}><Input {...register('working_hours_end')} type="time" /></Field>
+              <Field label={t('Full name')} error={errors.name?.message}><Input {...register('name')} /></Field>
+              <Field label={t('Phone')} error={errors.phone?.message}><Input {...register('phone')} type="tel" /></Field>
+              <Field label={t('Specialty')} error={errors.specialty?.message}><Input {...register('specialty')} /></Field>
+              <Field label={t('Location')} error={errors.location?.message}><Input {...register('location')} /></Field>
+              <Field label={t('Consultation cost ($)')} error={errors.cost?.message}><Input {...register('cost')} type="number" min="0" /></Field>
+              <Field label={t('Session duration (min)')} error={errors.avg_consultation_time?.message}><Input {...register('avg_consultation_time')} type="number" min="10" max="240" /></Field>
+              <Field label={t('Working hours start')} error={errors.working_hours_start?.message}><Input {...register('working_hours_start')} type="time" /></Field>
+              <Field label={t('Working hours end')} error={errors.working_hours_end?.message}><Input {...register('working_hours_end')} type="time" /></Field>
               <div className="sm:col-span-2">
-                <Field label="About you" error={errors.description?.message}>
+                <Field label={t('About you')} error={errors.description?.message}>
                   <textarea
                     {...register('description')}
                     rows={4}
                     className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
-                    placeholder="Describe your experience, specialties, approach..."
+                    placeholder={t('Describe your experience, specialties, approach...')}
                   />
                 </Field>
               </div>
@@ -166,18 +168,18 @@ export default function DoctorDashboard() {
 
           <div className="flex items-center gap-3">
             <Button type="submit" disabled={profileMutation.isPending || (!isDirty && !photoFile)}>
-              <Save className="h-4 w-4 mr-2" />{profileMutation.isPending ? 'Saving...' : 'Save changes'}
+              <Save className="h-4 w-4 mr-2" />{profileMutation.isPending ? t('Saving...') : t('Save changes')}
             </Button>
-            {saveSuccess && <span className="text-sm text-green-600 font-medium">Saved!</span>}
+            {saveSuccess && <span className="text-sm text-green-600 font-medium">{t('Saved!')}</span>}
           </div>
 
           {/* Danger zone */}
           <Card className="border-destructive/30">
-            <CardHeader><CardTitle className="text-destructive text-base">Danger zone</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-destructive text-base">{t('Danger zone')}</CardTitle></CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">Permanently delete your account and all appointments. This cannot be reversed.</p>
+              <p className="text-sm text-muted-foreground mb-4">{t('Permanently delete your account and all appointments. This cannot be reversed.')}</p>
               <Button type="button" variant="destructive" size="sm" onClick={handleDelete} disabled={deleteMutation.isPending}>
-                <Trash2 className="h-4 w-4 mr-2" />{deleteMutation.isPending ? 'Deleting...' : 'Delete account'}
+                <Trash2 className="h-4 w-4 mr-2" />{deleteMutation.isPending ? t('Deleting...') : t('Delete account')}
               </Button>
             </CardContent>
           </Card>
@@ -191,13 +193,13 @@ export default function DoctorDashboard() {
           ) : !appointments?.length ? (
             <div className="text-center py-16 text-muted-foreground">
               <CalendarDays className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>No appointments yet</p>
+              <p>{t('No appointments yet')}</p>
             </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border">
               <table className="w-full text-sm">
                 <thead className="border-b bg-muted/40">
-                  <tr>{['Patient', 'Date', 'Time', 'Payment', 'Status', ''].map((h, i) => <th key={i} className="px-4 py-3 text-left font-medium text-muted-foreground">{h}</th>)}</tr>
+                  <tr>{['Patient', 'Date', 'Time', 'Payment', 'Status', ''].map((h, i) => <th key={i} className="px-4 py-3 text-left font-medium text-muted-foreground">{h ? t(h) : ''}</th>)}</tr>
                 </thead>
                 <tbody className="divide-y">
                   {appointments.map(apt => {
@@ -211,13 +213,13 @@ export default function DoctorDashboard() {
                         </td>
                         <td className="px-4 py-3">{formatDate(apt.time_slot)}</td>
                         <td className="px-4 py-3">{formatTime(apt.time_slot)}</td>
-                        <td className="px-4 py-3 capitalize">{apt.payment_method}</td>
+                        <td className="px-4 py-3 capitalize">{t(apt.payment_method)}</td>
                         <td className="px-4 py-3">
                           <Badge
                             variant={apt.status === 'confirmed' ? 'success' : apt.status === 'cancelled' ? 'destructive' : 'secondary'}
                             className="capitalize"
                           >
-                            {apt.status}
+                            {t(apt.status)}
                           </Badge>
                         </td>
                         <td className="px-4 py-3 text-right">
@@ -227,7 +229,7 @@ export default function DoctorDashboard() {
                               onClick={() => completeMutation.mutate(apt.id)}
                               disabled={completeMutation.isPending}
                             >
-                              <CheckCircle2 className="h-4 w-4 mr-1.5" /> Mark completed
+                              <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t('Mark completed')}
                             </Button>
                           )}
                         </td>

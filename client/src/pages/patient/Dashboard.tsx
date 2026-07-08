@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { StarInput } from '@/components/ui/star-rating';
 import { getMyAppointments, cancelAppointment, createReview, getMyOrders } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useT } from '@/i18n';
 import { formatDT } from '@/data/products';
 import { formatDate, formatTime } from '@/lib/utils';
 
@@ -28,6 +29,7 @@ const orderStatusVariant: Record<string, 'success' | 'destructive' | 'secondary'
 
 export default function PatientDashboard() {
   const { user } = useAuthStore();
+  const t = useT();
   const queryClient = useQueryClient();
 
   const { data: appointments, isLoading } = useQuery({
@@ -44,9 +46,9 @@ export default function PatientDashboard() {
     mutationFn: cancelAppointment,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['appointments', 'my'] });
-      toast.success('Appointment cancelled.');
+      toast.success(t('Appointment cancelled.'));
     },
-    onError: (e: Error) => toast.error(e.message || 'Could not cancel the appointment'),
+    onError: (e: Error) => toast.error(e.message || t('Could not cancel the appointment')),
   });
 
   const userName = user?.user_metadata?.name ?? 'Patient';
@@ -63,8 +65,8 @@ export default function PatientDashboard() {
           <AvatarFallback className="bg-secondary text-secondary-foreground font-bold">{userInitials}</AvatarFallback>
         </Avatar>
         <div>
-          <h1 className="text-2xl font-bold">Hello, {userName}</h1>
-          <p className="text-muted-foreground">Manage your appointments</p>
+          <h1 className="text-2xl font-bold">{t('Hello,')} {userName}</h1>
+          <p className="text-muted-foreground">{t('Manage your appointments')}</p>
         </div>
       </div>
 
@@ -75,15 +77,15 @@ export default function PatientDashboard() {
       ) : !appointments?.length ? (
         <div className="text-center py-20">
           <CalendarDays className="h-14 w-14 mx-auto text-muted-foreground/40 mb-4" />
-          <h2 className="text-xl font-semibold mb-2">No appointments yet</h2>
-          <p className="text-muted-foreground mb-6">Find a doctor and book your first appointment.</p>
-          <Button asChild><Link to="/"><Search className="h-4 w-4 mr-2" />Find a doctor</Link></Button>
+          <h2 className="text-xl font-semibold mb-2">{t('No appointments yet')}</h2>
+          <p className="text-muted-foreground mb-6">{t('Find a doctor and book your first appointment.')}</p>
+          <Button asChild><Link to="/"><Search className="h-4 w-4 mr-2" />{t('Find a doctor')}</Link></Button>
         </div>
       ) : (
         <div className="space-y-8">
           {upcoming && upcoming.length > 0 && (
             <section>
-              <h2 className="font-semibold text-lg mb-4">Upcoming</h2>
+              <h2 className="font-semibold text-lg mb-4">{t('Upcoming')}</h2>
               <div className="space-y-4">
                 {upcoming.map(apt => (
                   <AppointmentCard
@@ -98,7 +100,7 @@ export default function PatientDashboard() {
           )}
           {past && past.length > 0 && (
             <section>
-              <h2 className="font-semibold text-lg mb-4 text-muted-foreground">Past</h2>
+              <h2 className="font-semibold text-lg mb-4 text-muted-foreground">{t('Past')}</h2>
               <div className="space-y-4">
                 {past.map(apt => <AppointmentCard key={apt.id} appointment={apt} />)}
               </div>
@@ -111,7 +113,7 @@ export default function PatientDashboard() {
       {orders && orders.length > 0 && (
         <section className="mt-10">
           <h2 className="font-semibold text-lg mb-4 flex items-center gap-2">
-            <Package className="h-5 w-5 text-primary" /> My orders
+            <Package className="h-5 w-5 text-primary" /> {t('My orders')}
           </h2>
           <Card>
             <CardContent className="divide-y p-0">
@@ -135,7 +137,7 @@ export default function PatientDashboard() {
                     </p>
                   </div>
                   <span className="font-bold text-primary">{formatDT(o.total)}</span>
-                  <Badge variant={orderStatusVariant[o.status] ?? 'secondary'} className="capitalize">{o.status}</Badge>
+                  <Badge variant={orderStatusVariant[o.status] ?? 'secondary'} className="capitalize">{t(o.status)}</Badge>
                 </div>
               ))}
             </CardContent>
@@ -154,6 +156,7 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
   const doc = apt.doctors;
   const initials = doc?.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() ?? '??';
 
+  const t = useT();
   const queryClient = useQueryClient();
   const [reviewOpen, setReviewOpen] = useState(false);
   const [rating, setRating] = useState(0);
@@ -183,7 +186,7 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
               <p className="font-semibold">{doc?.name ?? 'Unknown Doctor'}</p>
               {doc?.specialty && <p className="text-sm text-muted-foreground">{doc.specialty}</p>}
             </div>
-            <Badge variant={statusVariant[apt.status] ?? 'outline'} className="shrink-0 capitalize">{apt.status}</Badge>
+            <Badge variant={statusVariant[apt.status] ?? 'outline'} className="shrink-0 capitalize">{t(apt.status)}</Badge>
           </div>
           <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1"><CalendarDays className="h-4 w-4" />{formatDate(apt.time_slot)}</span>
@@ -194,13 +197,13 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
 
         {onCancel && apt.status === 'confirmed' && (
           <Button variant="outline" size="sm" onClick={onCancel} disabled={cancelling} className="shrink-0 self-center">
-            {cancelling ? 'Cancelling...' : 'Cancel'}
+            {cancelling ? t('Cancelling...') : t('Cancel')}
           </Button>
         )}
 
         {apt.status === 'completed' && doc && (
           <Button variant="outline" size="sm" onClick={() => setReviewOpen(true)} className="shrink-0 self-center">
-            <Star className="h-4 w-4 mr-1.5" />Leave a review
+            <Star className="h-4 w-4 mr-1.5" />{t('Leave a review')}
           </Button>
         )}
       </CardContent>
@@ -209,23 +212,23 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
       <Dialog open={reviewOpen} onOpenChange={setReviewOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Review {doc?.name}</DialogTitle>
-            <DialogDescription>Share your experience to help other patients.</DialogDescription>
+            <DialogTitle>{t('Review')} {doc?.name}</DialogTitle>
+            <DialogDescription>{t('Share your experience to help other patients.')}</DialogDescription>
           </DialogHeader>
 
           {submitted ? (
-            <p className="py-6 text-center text-sm font-medium text-accent">Thanks — your review was submitted!</p>
+            <p className="py-6 text-center text-sm font-medium text-accent">{t('Thanks — your review was submitted!')}</p>
           ) : (
             <div className="space-y-4">
               <div className="flex flex-col items-center gap-2">
                 <StarInput value={rating} onChange={setRating} />
-                <span className="text-xs text-muted-foreground">{rating > 0 ? `${rating} / 5` : 'Tap to rate'}</span>
+                <span className="text-xs text-muted-foreground">{rating > 0 ? `${rating} / 5` : t('Tap to rate')}</span>
               </div>
 
               <textarea
                 value={comment}
                 onChange={e => setComment(e.target.value)}
-                placeholder="What was your experience like? (optional)"
+                placeholder={t('What was your experience like? (optional)')}
                 rows={4}
                 maxLength={1000}
                 className="w-full rounded-lg border bg-background px-3 py-2 text-sm resize-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
@@ -236,13 +239,13 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
               )}
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setReviewOpen(false)}>Cancel</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setReviewOpen(false)}>{t('Cancel')}</Button>
                 <Button
                   className="flex-1"
                   onClick={() => reviewMutation.mutate()}
                   disabled={rating === 0 || reviewMutation.isPending}
                 >
-                  {reviewMutation.isPending ? 'Submitting...' : 'Submit review'}
+                  {reviewMutation.isPending ? t('Submitting...') : t('Submit review')}
                 </Button>
               </div>
             </div>

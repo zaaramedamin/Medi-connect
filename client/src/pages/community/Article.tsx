@@ -8,6 +8,7 @@ import { AuthorAvatar } from '@/components/features/ArticleCard';
 import { ARTICLE_CATEGORY_META, articleCover, formatArticleDate } from '@/data/articleMeta';
 import { getArticle, addArticleComment, deleteArticle } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useT } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 export default function Article() {
@@ -15,6 +16,7 @@ export default function Article() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, role } = useAuthStore();
+  const t = useT();
   const [comment, setComment] = useState('');
 
   const { data: article, isLoading, isError } = useQuery({
@@ -50,9 +52,9 @@ export default function Article() {
   if (isError || !article) {
     return (
       <div className="container py-24 text-center">
-        <p className="text-lg font-semibold">Article not found</p>
+        <p className="text-lg font-semibold">{t('Article not found')}</p>
         <Button variant="outline" className="mt-4" asChild>
-          <Link to="/community">Back to community</Link>
+          <Link to="/community">{t('Back to community')}</Link>
         </Button>
       </div>
     );
@@ -67,13 +69,13 @@ export default function Article() {
     <article className="animate-fade-in">
       <div className="container max-w-3xl py-8 md:py-12">
         <Link to="/community" className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground hover:text-foreground">
-          <ArrowLeft className="h-4 w-4" /> Community
+          <ArrowLeft className="h-4 w-4" /> {t('Community')}
         </Link>
 
         <BlurFade>
           <div className="mt-6">
             <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold', meta.badge)}>
-              <Icon className="h-3.5 w-3.5" /> {meta.label}
+              <Icon className="h-3.5 w-3.5" /> {t(meta.label)}
             </span>
             <h1 className="mt-4 text-3xl font-extrabold leading-tight md:text-4xl">{article.title}</h1>
 
@@ -83,7 +85,7 @@ export default function Article() {
                 <div>
                   <p className="text-sm font-semibold">{article.author.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {article.author.specialty ?? 'Doctor'} · {formatArticleDate(article.created_at)}
+                    {article.author.specialty ?? t('Doctor')} · {formatArticleDate(article.created_at)}
                   </p>
                 </div>
               </div>
@@ -95,7 +97,7 @@ export default function Article() {
                   disabled={deleteMutation.isPending}
                   className="text-muted-foreground hover:text-destructive"
                 >
-                  <Trash2 className="mr-1.5 h-4 w-4" /> Delete
+                  <Trash2 className="mr-1.5 h-4 w-4" /> {t('Delete')}
                 </Button>
               )}
             </div>
@@ -113,7 +115,7 @@ export default function Article() {
         <section className="mt-12 border-t pt-8">
           <h2 className="flex items-center gap-2 text-lg font-bold">
             <MessageCircle className="h-5 w-5 text-primary" />
-            Discussion ({article.comments.length})
+            {t('Discussion')} ({article.comments.length})
           </h2>
 
           {user ? (
@@ -129,28 +131,28 @@ export default function Article() {
                 onChange={e => setComment(e.target.value)}
                 rows={3}
                 maxLength={1500}
-                placeholder="Share your point of view…"
+                placeholder={t('Share your point of view…')}
                 className="w-full resize-none rounded-xl border bg-card px-4 py-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
               />
               <div className="mt-2 flex items-center justify-between">
                 {commentMutation.isError ? (
-                  <p className="text-xs text-destructive">Could not post your comment. Please try again.</p>
+                  <p className="text-xs text-destructive">{t('Could not post your comment. Please try again.')}</p>
                 ) : <span />}
                 <Button type="submit" size="sm" disabled={!comment.trim() || commentMutation.isPending}>
                   {commentMutation.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
-                  Post
+                  {t('Post')}
                 </Button>
               </div>
             </form>
           ) : (
             <p className="mt-5 rounded-xl border bg-muted/40 px-4 py-3 text-sm text-muted-foreground">
-              <Link to="/login" className="font-semibold text-primary hover:underline">Sign in</Link> to join the discussion.
+              <Link to="/login" className="font-semibold text-primary hover:underline">{t('Sign in')}</Link> {t('to join the discussion.')}
             </p>
           )}
 
           <div className="mt-6 space-y-5">
             {article.comments.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No comments yet — be the first to reply.</p>
+              <p className="text-sm text-muted-foreground">{t('No comments yet — be the first to reply.')}</p>
             ) : (
               article.comments.map(c => (
                 <div key={c.id} className="flex gap-3">
@@ -159,7 +161,7 @@ export default function Article() {
                     <div className="flex flex-wrap items-center gap-2">
                       <p className="text-sm font-semibold">{c.author_name}</p>
                       {c.author_role === 'doctor' && (
-                        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">Doctor</span>
+                        <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">{t('Doctor')}</span>
                       )}
                       <span className="text-xs text-muted-foreground">{formatArticleDate(c.created_at)}</span>
                     </div>
