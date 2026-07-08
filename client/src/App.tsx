@@ -21,6 +21,7 @@ const DoctorDashboard = lazy(() => import('@/pages/doctor/Dashboard'));
 const DoctorProfile = lazy(() => import('@/pages/doctor/Profile'));
 const AdminDashboard = lazy(() => import('@/pages/admin/Dashboard'));
 const Shop = lazy(() => import('@/pages/Shop'));
+const WhyMediConnect = lazy(() => import('@/pages/WhyMediConnect'));
 const Community = lazy(() => import('@/pages/community/Community'));
 const CommunityArticle = lazy(() => import('@/pages/community/Article'));
 const NewArticle = lazy(() => import('@/pages/community/NewArticle'));
@@ -56,6 +57,7 @@ const PAGE_TITLES: [string, string][] = [
   ['/forgot-password', 'Reset password'],
   ['/reset-password', 'New password'],
   ['/community', 'Doctor insights & advice'],
+  ['/why-mediconnect', 'Why MediConnect'],
   ['/settings', 'Account settings'],
   ['/register', 'Create an account'],
   ['/doctor/', 'Doctor profile'],
@@ -100,6 +102,7 @@ function AppRoutes() {
                   element={<ProtectedRoute><Settings /></ProtectedRoute>}
                 />
                 <Route path="/shop" element={<Shop />} />
+                <Route path="/why-mediconnect" element={<WhyMediConnect />} />
                 <Route path="/community" element={<Community />} />
                 <Route
                   path="/community/new"

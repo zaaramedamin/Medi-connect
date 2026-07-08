@@ -25,7 +25,7 @@ const PATIENT_LINKS = [
 
 const DOCTOR_LINKS = [
   { label: 'Partner with us', href: 'mailto:partners@mediconnect.tn' },
-  { label: 'Why MediConnect', href: '/#for-doctors' },
+  { label: 'Why MediConnect', href: '/why-mediconnect' },
   { label: 'Doctor sign in', href: '/login' },
 ] as const;
 

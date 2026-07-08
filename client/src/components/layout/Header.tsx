@@ -9,7 +9,7 @@ const NAV_LINKS = [
   { label: 'Find a doctor', href: '/' },
   { label: 'Shop', href: '/shop' },
   { label: 'Insights', href: '/community' },
-  { label: 'For doctors', href: '/#for-doctors' },
+  { label: 'Why us', href: '/why-mediconnect' },
 ] as const;
 
 const NAV_LINK_CLASS =
