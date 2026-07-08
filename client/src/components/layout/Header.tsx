@@ -14,7 +14,7 @@ const NAV_LINKS = [
 ] as const;
 
 const NAV_LINK_CLASS =
-  'rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted';
+  'whitespace-nowrap rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground hover:bg-muted';
 
 /** Hash links scroll within the home page; route links use client-side navigation. */
 function NavLink({ label, href, onClick, className = NAV_LINK_CLASS }: { label: string; href: string; onClick?: () => void; className?: string }) {
@@ -60,7 +60,7 @@ export function Header() {
         </Link>
 
         {/* Desktop nav */}
-        <nav className="hidden md:flex items-center gap-1" aria-label="Main">
+        <nav className="hidden lg:flex items-center gap-1" aria-label="Main">
           {NAV_LINKS.map(link => (
             <NavLink key={link.label} {...link} label={t(link.label)} />
           ))}
@@ -97,7 +97,7 @@ export function Header() {
           </Button>
 
           {user ? (
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild>
                 <Link to={dashboardPath}><LayoutDashboard className="h-4 w-4 mr-1.5" />{t('Dashboard')}</Link>
               </Button>
@@ -109,7 +109,7 @@ export function Header() {
               </Button>
             </div>
           ) : (
-            <div className="hidden md:flex items-center gap-2">
+            <div className="hidden lg:flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild>
                 <Link to="/login">{t('Sign in')}</Link>
               </Button>
@@ -123,7 +123,7 @@ export function Header() {
           <Button
             variant="ghost"
             size="icon"
-            className="md:hidden"
+            className="lg:hidden"
             onClick={() => setMenuOpen(o => !o)}
             aria-label={menuOpen ? 'Close menu' : 'Open menu'}
             aria-expanded={menuOpen}
@@ -135,7 +135,7 @@ export function Header() {
 
       {/* Mobile menu */}
       {menuOpen && (
-        <nav className="md:hidden border-t bg-background px-5 py-4 space-y-1 animate-fade-in" aria-label="Mobile">
+        <nav className="lg:hidden border-t bg-background px-5 py-4 space-y-1 animate-fade-in" aria-label="Mobile">
           {NAV_LINKS.map(link => (
             <NavLink
               key={link.label}

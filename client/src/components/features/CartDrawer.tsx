@@ -110,8 +110,8 @@ export function CartDrawer() {
                       <div className="flex flex-1 flex-col">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <p className="text-sm font-semibold leading-tight">{product.name}</p>
-                            <p className="text-xs text-muted-foreground">{product.category}</p>
+                            <p className="text-sm font-semibold leading-tight">{t(product.name)}</p>
+                            <p className="text-xs text-muted-foreground">{t(product.category)}</p>
                           </div>
                           <button
                             onClick={() => remove(product.id)}

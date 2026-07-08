@@ -5,6 +5,7 @@ import { X, Check, ShoppingBag, Minus, Plus, Truck, RotateCcw } from 'lucide-rea
 import { Button } from '@/components/ui/button';
 import { StarRating } from '@/components/ui/star-rating';
 import { useCartStore } from '@/stores/cartStore';
+import { useT } from '@/i18n';
 import { formatDT, type Product } from '@/data/products';
 import { lockScroll, unlockScroll } from '@/lib/scroll-lock';
 
@@ -22,6 +23,7 @@ export function ProductQuickView({ product, onClose }: { product: Product | null
 
 function QuickViewInner({ product, onClose }: { product: Product; onClose: () => void }) {
   const add = useCartStore(s => s.add);
+  const t = useT();
   const [qty, setQty] = useState(1);
 
   useEffect(() => {
@@ -70,15 +72,15 @@ function QuickViewInner({ product, onClose }: { product: Product; onClose: () =>
           />
           {product.tag && (
             <span className="absolute left-4 top-4 rounded-full bg-background/90 px-3 py-1 text-xs font-semibold text-primary shadow-sm backdrop-blur">
-              {product.tag}
+              {t(product.tag)}
             </span>
           )}
         </div>
 
         {/* Details */}
         <div className="flex max-h-[85vh] flex-col overflow-y-auto p-6 md:p-7">
-          <span className="text-xs font-semibold uppercase tracking-wide text-accent">{product.category}</span>
-          <h2 className="mt-1 font-display text-xl font-bold leading-tight md:text-2xl">{product.name}</h2>
+          <span className="text-xs font-semibold uppercase tracking-wide text-accent">{t(product.category)}</span>
+          <h2 className="mt-1 font-display text-xl font-bold leading-tight md:text-2xl">{t(product.name)}</h2>
           <div className="mt-2">
             <StarRating value={product.rating} count={product.reviews} size={16} />
           </div>
@@ -90,7 +92,7 @@ function QuickViewInner({ product, onClose }: { product: Product; onClose: () =>
             )}
           </div>
 
-          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{product.description}</p>
+          <p className="mt-3 text-sm leading-relaxed text-muted-foreground">{t(product.description)}</p>
 
           <ul className="mt-4 grid gap-2">
             {product.highlights.map((h, i) => (
@@ -104,7 +106,7 @@ function QuickViewInner({ product, onClose }: { product: Product; onClose: () =>
                 <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-accent/12 text-accent">
                   <Check className="h-3 w-3" />
                 </span>
-                {h}
+                {t(h)}
               </motion.li>
             ))}
           </ul>
@@ -128,13 +130,13 @@ function QuickViewInner({ product, onClose }: { product: Product; onClose: () =>
               </button>
             </div>
             <Button className="flex-1" size="lg" onClick={addToBag}>
-              <ShoppingBag className="mr-1.5 h-4 w-4" /> Add to bag
+              <ShoppingBag className="mr-1.5 h-4 w-4" /> {t('Add to bag')}
             </Button>
           </div>
 
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-1.5 border-t pt-4 text-xs text-muted-foreground">
-            <span className="flex items-center gap-1.5"><Truck className="h-3.5 w-3.5 text-accent" />Free delivery over 150 DT</span>
-            <span className="flex items-center gap-1.5"><RotateCcw className="h-3.5 w-3.5 text-accent" />14-day returns</span>
+            <span className="flex items-center gap-1.5"><Truck className="h-3.5 w-3.5 text-accent" />{t('Free delivery over 150 DT')}</span>
+            <span className="flex items-center gap-1.5"><RotateCcw className="h-3.5 w-3.5 text-accent" />{t('14-day returns')}</span>
           </div>
         </div>
 

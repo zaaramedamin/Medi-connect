@@ -1,7 +1,8 @@
 // French translations, keyed by the English source string.
 // Anything not listed here falls back to English, so partial coverage is safe.
+import { PRODUCTS_FR } from './productsFr';
 
-export const FR: Record<string, string> = {
+const BASE: Record<string, string> = {
   // ── Header / nav ────────────────────────────────────────────────
   'Find a doctor': 'Trouver un médecin',
   'Shop': 'Boutique',
@@ -244,3 +245,5 @@ export const FR: Record<string, string> = {
   'Visit the shop': 'Visiter la boutique',
   'Read insights': 'Lire les conseils',
 };
+
+export const FR: Record<string, string> = { ...BASE, ...PRODUCTS_FR };

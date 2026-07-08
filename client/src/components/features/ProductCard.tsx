@@ -3,6 +3,7 @@ import { ShoppingBag, Eye, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { StarRating } from '@/components/ui/star-rating';
 import { useCartStore } from '@/stores/cartStore';
+import { useT } from '@/i18n';
 import { formatDT, type Product } from '@/data/products';
 import { cn } from '@/lib/utils';
 
@@ -21,6 +22,7 @@ interface ProductCardProps {
  */
 export function ProductCard({ product, onQuickView, compact = false }: ProductCardProps) {
   const add = useCartStore(s => s.add);
+  const t = useT();
   const timer = useRef<number | null>(null);
 
   const startHover = () => {
@@ -54,7 +56,7 @@ export function ProductCard({ product, onQuickView, compact = false }: ProductCa
         />
         {product.tag && (
           <span className="absolute left-2.5 top-2.5 rounded-full bg-background/90 px-2 py-0.5 text-[11px] font-semibold text-primary shadow-sm backdrop-blur">
-            {product.tag}
+            {t(product.tag)}
           </span>
         )}
 
@@ -75,10 +77,10 @@ export function ProductCard({ product, onQuickView, compact = false }: ProductCa
       </div>
 
       <figcaption className={cn('flex flex-1 flex-col', compact ? 'p-3.5' : 'p-4')}>
-        <span className="text-[11px] font-semibold uppercase tracking-wide text-accent">{product.category}</span>
-        <h3 className="mt-0.5 truncate text-sm font-semibold">{product.name}</h3>
+        <span className="text-[11px] font-semibold uppercase tracking-wide text-accent">{t(product.category)}</span>
+        <h3 className="mt-0.5 truncate text-sm font-semibold">{t(product.name)}</h3>
         {compact ? (
-          <p className="mt-0.5 truncate text-xs text-muted-foreground">{product.short}</p>
+          <p className="mt-0.5 truncate text-xs text-muted-foreground">{t(product.short)}</p>
         ) : (
           <div className="mt-1">
             <StarRating value={product.rating} count={product.reviews} size={13} />
