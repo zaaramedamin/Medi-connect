@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlurFade } from '@/components/ui/blur-fade';
+import { AnimatedText } from '@/components/ui/animated-text';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { TestimonialCarousel } from '@/components/features/TestimonialCarousel';
 import doctorCta from '@/assets/doctor-cta.svg';
@@ -384,7 +385,7 @@ function FeatureRow({
         </BlurFade>
         <BlurFade className={reverse ? 'order-1 lg:order-1' : 'order-1 lg:order-2'}>
           <span className="mb-3 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{eyebrow}</span>
-          <h2 className="mb-4 text-2xl font-bold md:text-3xl">{title}</h2>
+          <h2 className="mb-4 text-2xl font-bold md:text-3xl"><AnimatedText text={title} /></h2>
           <p className="mb-6 max-w-lg text-muted-foreground">{text}</p>
           <ul className="space-y-2.5">
             {points.map(p => (

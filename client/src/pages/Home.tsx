@@ -11,6 +11,8 @@ import { BlurFade } from '@/components/ui/blur-fade';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { Typewriter } from '@/components/ui/typewriter';
 import { RotatingText } from '@/components/ui/rotating-text';
+import { AnimatedText } from '@/components/ui/animated-text';
+import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { Parallax } from '@/components/ui/parallax';
 import { DoctorCard } from '@/components/features/DoctorCard';
 import { DoctorMap } from '@/components/features/DoctorMap';
@@ -306,7 +308,7 @@ export default function Home() {
             <BlurFade>
               <div className="flex items-end justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-1">Top-rated doctors</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-1"><AnimatedText text="Top-rated doctors" /></h2>
                   <p className="text-muted-foreground text-sm">The highest-rated doctors on MediConnect right now.</p>
                 </div>
                 <button
@@ -340,7 +342,7 @@ export default function Home() {
             <BlurFade>
               <div className="flex items-end justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-1">Browse by specialty</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-1"><AnimatedText text="Browse by specialty" /></h2>
                   <p className="text-muted-foreground text-sm">Tap a specialty to see available doctors.</p>
                 </div>
               </div>
@@ -367,7 +369,7 @@ export default function Home() {
             <div className="container">
               <BlurFade>
                 <div className="text-center max-w-xl mx-auto mb-12">
-                  <h2 className="text-2xl md:text-3xl font-bold mb-3">Book a visit in three steps</h2>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-3"><AnimatedText text="Book a visit in three steps" /></h2>
                   <p className="text-muted-foreground">From search to confirmation in less than a minute.</p>
                 </div>
               </BlurFade>
@@ -400,7 +402,7 @@ export default function Home() {
                 <span className="inline-block rounded-full bg-accent/10 text-accent px-3 py-1 text-xs font-semibold mb-4">
                   For practitioners
                 </span>
-                <h2 className="text-2xl md:text-3xl font-bold mb-4">Grow your practice with MediConnect</h2>
+                <h2 className="text-2xl md:text-3xl font-bold mb-4"><AnimatedText text="Grow your practice with MediConnect" /></h2>
                 <p className="text-muted-foreground mb-8 max-w-lg">
                   Set your working hours once — patients book only the slots you offer. Block time off in one click and keep every appointment in a single dashboard. Membership is by invitation — our team verifies every doctor before listing.
                 </p>
@@ -437,7 +439,7 @@ export default function Home() {
                     <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
                       <Stethoscope className="h-3.5 w-3.5" /> Health insights
                     </span>
-                    <h2 className="mb-1 text-2xl font-bold md:text-3xl">From our doctors — reports &amp; advice</h2>
+                    <h2 className="mb-1 text-2xl font-bold md:text-3xl"><AnimatedText text="From our doctors — reports & advice" /></h2>
                     <p className="text-sm text-muted-foreground">Trusted guidance and public updates, written by the doctors on MediConnect.</p>
                   </div>
                   <Link to="/community" className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:underline sm:inline-flex">
@@ -458,19 +460,20 @@ export default function Home() {
           {/* Testimonials */}
           <section className="bg-muted/50 py-16 overflow-hidden">
             <BlurFade>
-              <h2 className="text-2xl md:text-3xl font-bold text-center mb-12">Loved by patients and doctors</h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-12"><AnimatedText text="Loved by patients and doctors" /></h2>
             </BlurFade>
             <TestimonialCarousel />
           </section>
 
-          {/* Final CTA */}
+          {/* Final CTA — real photo background as an on-brand duotone */}
           <section className="container py-20">
             <BlurFade>
-            <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-primary to-accent px-6 py-14 md:px-14 text-center">
+            <div className="relative overflow-hidden rounded-3xl px-6 py-16 md:px-14 md:py-20 text-center">
+              <HeroBackdrop image="/backgrounds/cta.jpg" rounded />
               <div aria-hidden className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10" />
               <div aria-hidden className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-white/10" />
               <h2 className="relative text-2xl md:text-4xl font-bold text-white mb-4">
-                Ready for your next appointment?
+                <AnimatedText text="Ready for your next appointment?" />
               </h2>
               <p className="relative text-white/85 max-w-md mx-auto mb-8">
                 Create a free account and book your first visit today. Your data stays encrypted and is never sold.

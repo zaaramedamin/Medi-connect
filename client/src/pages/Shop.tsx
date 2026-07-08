@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import { Search, ShoppingBag, Truck, ShieldCheck, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { BlurFade } from '@/components/ui/blur-fade';
+import { AnimatedText } from '@/components/ui/animated-text';
+import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { ProductCard } from '@/components/features/ProductCard';
 import { ProductQuickView } from '@/components/features/ProductQuickView';
 import { PRODUCTS, PRODUCT_CATEGORIES, type Product } from '@/data/products';
@@ -45,22 +47,21 @@ export default function Shop() {
     <div className="animate-fade-in">
       {/* Header */}
       <section className="relative overflow-hidden border-b">
-        <div aria-hidden className="absolute inset-0">
-          <div className="absolute inset-0 bg-linear-to-br from-primary/10 via-transparent to-accent/10" />
-          <div className="absolute -top-24 -right-16 h-72 w-72 rounded-full bg-accent/15 blur-3xl" />
-        </div>
-        <div className="container relative py-12 md:py-16">
+        <HeroBackdrop image="/backgrounds/shop.jpg" />
+        <div className="container relative py-16 text-white md:py-20">
           <BlurFade>
-            <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
+            <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
               <ShoppingBag className="h-3.5 w-3.5" /> Health shop
             </span>
-            <h1 className="text-3xl font-extrabold md:text-4xl">Parapharmacie &amp; wellness</h1>
-            <p className="mt-2 max-w-xl text-muted-foreground">
+            <h1 className="text-3xl font-extrabold md:text-4xl">
+              <AnimatedText text="Parapharmacie & wellness" />
+            </h1>
+            <p className="mt-2 max-w-xl text-white/85">
               Home health devices, supplements, skincare, and everyday essentials — delivered to your door.
             </p>
-            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><Truck className="h-4 w-4 text-accent" />Free delivery over 150 DT</span>
-              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-accent" />Authentic products</span>
+            <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/85">
+              <span className="flex items-center gap-1.5"><Truck className="h-4 w-4" />Free delivery over 150 DT</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" />Authentic products</span>
             </div>
           </BlurFade>
         </div>

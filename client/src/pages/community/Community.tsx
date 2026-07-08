@@ -5,6 +5,8 @@ import { Search, PenSquare, MessagesSquare, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { BlurFade } from '@/components/ui/blur-fade';
+import { AnimatedText } from '@/components/ui/animated-text';
+import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { ArticleCard } from '@/components/features/ArticleCard';
 import { ARTICLE_FILTERS } from '@/data/articleMeta';
 import { getArticles } from '@/services/api';
@@ -33,34 +35,24 @@ export default function Community() {
 
   return (
     <div className="animate-fade-in">
-      {/* Header — animated wave background with a slow cinematic drift */}
+      {/* Header — real medical photo as an on-brand duotone with a slow drift */}
       <section className="relative overflow-hidden border-b">
-        <div aria-hidden className="absolute inset-0">
-          <img
-            src="/backgrounds/insights-hero.webp"
-            alt=""
-            draggable={false}
-            className="h-full w-full object-cover animate-bg-drift motion-reduce:animate-none"
-          />
-          {/* Readability overlays: soft left-to-right wash + dark-mode dimming */}
-          <div className="absolute inset-0 bg-linear-to-r from-background/85 via-background/45 to-transparent dark:from-background/95 dark:via-background/75 dark:to-background/40" />
-          {/* Extra drifting glows so the light itself feels alive */}
-          <div className="absolute -top-24 -left-16 h-72 w-72 rounded-full bg-primary/20 blur-3xl animate-aurora" />
-          <div className="absolute -bottom-28 right-0 h-80 w-80 rounded-full bg-accent/20 blur-3xl animate-aurora-slow" />
-        </div>
-        <div className="container relative flex flex-col gap-6 py-12 md:flex-row md:items-end md:justify-between md:py-16">
+        <HeroBackdrop image="/backgrounds/insights.jpg" />
+        <div className="container relative flex flex-col gap-6 py-16 text-white md:flex-row md:items-end md:justify-between md:py-20">
           <BlurFade>
-            <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+            <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
               <MessagesSquare className="h-3.5 w-3.5" /> Community
             </span>
-            <h1 className="text-3xl font-extrabold md:text-4xl">Doctor insights &amp; advice</h1>
-            <p className="mt-2 max-w-xl text-muted-foreground">
+            <h1 className="text-3xl font-extrabold md:text-4xl">
+              <AnimatedText text="Doctor insights & advice" />
+            </h1>
+            <p className="mt-2 max-w-xl text-white/85">
               Public health reports and practical advice from our doctors — and a space for them to share and discuss.
             </p>
           </BlurFade>
           {(role === 'doctor' || role === 'admin') && (
             <BlurFade delay={0.1}>
-              <Button asChild>
+              <Button className="bg-white text-primary hover:bg-white/90" asChild>
                 <Link to="/community/new"><PenSquare className="mr-1.5 h-4 w-4" /> Write an article</Link>
               </Button>
             </BlurFade>
