@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
+import { useT } from '@/i18n';
 
 const schema = z.object({
   email: z.string().email('Invalid email address'),
@@ -15,6 +16,7 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>;
 
 export default function ForgotPassword() {
+  const t = useT();
   const [sent, setSent] = useState(false);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -41,28 +43,27 @@ export default function ForgotPassword() {
           <div className="mb-2 flex justify-center">
             <KeyRound className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Reset your password</CardTitle>
+          <CardTitle className="text-2xl">{t('Reset your password')}</CardTitle>
           <CardDescription>
-            Enter your account email and we&apos;ll send you a reset link.
+            {t("Enter your account email and we'll send you a reset link.")}
           </CardDescription>
         </CardHeader>
         <CardContent>
           {sent ? (
             <div className="py-4 text-center">
               <MailCheck className="mx-auto mb-3 h-10 w-10 text-accent" />
-              <p className="font-semibold">Check your inbox</p>
+              <p className="font-semibold">{t('Check your inbox')}</p>
               <p className="mt-1 text-sm text-muted-foreground">
-                If an account exists for that email, a password reset link is on its way.
-                The link opens a page where you can choose a new password.
+                {t('If an account exists for that email, a password reset link is on its way. The link opens a page where you can choose a new password.')}
               </p>
               <Button variant="outline" className="mt-5" asChild>
-                <Link to="/login">Back to sign in</Link>
+                <Link to="/login">{t('Back to sign in')}</Link>
               </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <div className="space-y-1">
-                <label htmlFor="email" className="text-sm font-medium">Email</label>
+                <label htmlFor="email" className="text-sm font-medium">{t('Email')}</label>
                 <Input id="email" type="email" placeholder="you@example.com" autoComplete="email" {...register('email')} />
                 {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
               </div>
@@ -72,12 +73,12 @@ export default function ForgotPassword() {
               )}
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Sending…' : 'Send reset link'}
+                {isSubmitting ? t('Sending…') : t('Send reset link')}
               </Button>
 
               <p className="text-center text-sm text-muted-foreground">
-                Remembered it?{' '}
-                <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link>
+                {t('Remembered it?')}{' '}
+                <Link to="/login" className="font-medium text-primary hover:underline">{t('Sign in')}</Link>
               </p>
             </form>
           )}

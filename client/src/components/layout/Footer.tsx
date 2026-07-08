@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { Stethoscope, Mail, MapPin } from 'lucide-react';
+import { useI18n } from '@/i18n';
 
 function GithubIcon({ className }: { className?: string }) {
   return (
@@ -30,6 +31,7 @@ const DOCTOR_LINKS = [
 ] as const;
 
 export function Footer() {
+  const { t } = useI18n();
   return (
     <footer className="border-t bg-muted/40 mt-auto">
       <div className="container py-12">
@@ -45,7 +47,7 @@ export function Footer() {
               </span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed mb-5">
-              Healthcare made simple — find trusted doctors and book appointments online in seconds.
+              {t('Healthcare made simple — find trusted doctors and book appointments online in seconds.')}
             </p>
             <div className="flex gap-2">
               <a
@@ -71,12 +73,12 @@ export function Footer() {
 
           {/* For patients */}
           <nav aria-label="For patients">
-            <h3 className="text-sm font-bold mb-4">For patients</h3>
+            <h3 className="text-sm font-bold mb-4">{t('For patients')}</h3>
             <ul className="space-y-2.5">
               {PATIENT_LINKS.map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                    {label}
+                    {t(label)}
                   </a>
                 </li>
               ))}
@@ -85,12 +87,12 @@ export function Footer() {
 
           {/* For doctors */}
           <nav aria-label="For doctors">
-            <h3 className="text-sm font-bold mb-4">For doctors</h3>
+            <h3 className="text-sm font-bold mb-4">{t('For doctors')}</h3>
             <ul className="space-y-2.5">
               {DOCTOR_LINKS.map(({ label, href }) => (
                 <li key={label}>
                   <a href={href} className="text-sm text-muted-foreground transition-colors hover:text-primary">
-                    {label}
+                    {t(label)}
                   </a>
                 </li>
               ))}
@@ -99,7 +101,7 @@ export function Footer() {
 
           {/* Contact */}
           <div>
-            <h3 className="text-sm font-bold mb-4">Contact</h3>
+            <h3 className="text-sm font-bold mb-4">{t('Contact')}</h3>
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li className="flex items-start gap-2.5">
                 <Mail className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
@@ -120,9 +122,9 @@ export function Footer() {
         <div className="container py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
           <p>© {new Date().getFullYear()} MediConnect. Built by Zaara Med Amin &amp; Dhia Zorai.</p>
           <nav className="flex gap-5" aria-label="Legal">
-            <a href="#" className="transition-colors hover:text-primary">Privacy</a>
-            <a href="#" className="transition-colors hover:text-primary">Terms</a>
-            <a href="#" className="transition-colors hover:text-primary">Cookies</a>
+            <a href="#" className="transition-colors hover:text-primary">{t('Privacy')}</a>
+            <a href="#" className="transition-colors hover:text-primary">{t('Terms')}</a>
+            <a href="#" className="transition-colors hover:text-primary">{t('Cookies')}</a>
           </nav>
         </div>
       </div>

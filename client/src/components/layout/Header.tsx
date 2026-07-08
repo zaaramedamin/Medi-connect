@@ -1,8 +1,9 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Stethoscope, Moon, Sun, LogOut, LayoutDashboard, Menu, X, ShoppingBag, UserCog } from 'lucide-react';
+import { Stethoscope, Moon, Sun, LogOut, LayoutDashboard, Menu, X, ShoppingBag, UserCog, Languages } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuthStore } from '@/stores/authStore';
 import { useCartStore, cartCount } from '@/stores/cartStore';
+import { useI18n } from '@/i18n';
 import { useState, useEffect } from 'react';
 
 const NAV_LINKS = [
@@ -25,6 +26,7 @@ function NavLink({ label, href, onClick, className = NAV_LINK_CLASS }: { label: 
 
 export function Header() {
   const { user, role, signOut } = useAuthStore();
+  const { t, lang, toggle } = useI18n();
   const cartItems = useCartStore(s => s.items);
   const openCart = useCartStore(s => s.open);
   const count = cartCount(cartItems);
@@ -60,11 +62,21 @@ export function Header() {
         {/* Desktop nav */}
         <nav className="hidden md:flex items-center gap-1" aria-label="Main">
           {NAV_LINKS.map(link => (
-            <NavLink key={link.label} {...link} />
+            <NavLink key={link.label} {...link} label={t(link.label)} />
           ))}
         </nav>
 
         <div className="flex items-center gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={toggle}
+            aria-label={lang === 'fr' ? t('Switch to English') : t('Switch to French')}
+            className="gap-1.5 font-semibold"
+          >
+            <Languages className="h-4 w-4" /> {lang.toUpperCase()}
+          </Button>
+
           <Button
             variant="ghost"
             size="icon"
@@ -87,22 +99,22 @@ export function Header() {
           {user ? (
             <div className="hidden md:flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild>
-                <Link to={dashboardPath}><LayoutDashboard className="h-4 w-4 mr-1.5" />Dashboard</Link>
+                <Link to={dashboardPath}><LayoutDashboard className="h-4 w-4 mr-1.5" />{t('Dashboard')}</Link>
               </Button>
               <Button variant="ghost" size="icon" asChild aria-label="Account settings">
                 <Link to="/settings"><UserCog className="h-4 w-4" /></Link>
               </Button>
               <Button variant="outline" size="sm" onClick={handleSignOut}>
-                <LogOut className="h-4 w-4 mr-1.5" />Sign out
+                <LogOut className="h-4 w-4 mr-1.5" />{t('Sign out')}
               </Button>
             </div>
           ) : (
             <div className="hidden md:flex items-center gap-2">
               <Button variant="ghost" size="sm" asChild>
-                <Link to="/login">Sign in</Link>
+                <Link to="/login">{t('Sign in')}</Link>
               </Button>
               <Button size="sm" className="shadow-sm" asChild>
-                <Link to="/register">Get started</Link>
+                <Link to="/register">{t('Get started')}</Link>
               </Button>
             </div>
           )}
@@ -128,6 +140,7 @@ export function Header() {
             <NavLink
               key={link.label}
               {...link}
+              label={t(link.label)}
               onClick={() => setMenuOpen(false)}
               className="block rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-muted"
             />
@@ -136,22 +149,22 @@ export function Header() {
             {user ? (
               <>
                 <Button variant="outline" size="sm" asChild onClick={() => setMenuOpen(false)}>
-                  <Link to={dashboardPath}><LayoutDashboard className="h-4 w-4 mr-1.5" />Dashboard</Link>
+                  <Link to={dashboardPath}><LayoutDashboard className="h-4 w-4 mr-1.5" />{t('Dashboard')}</Link>
                 </Button>
                 <Button variant="outline" size="sm" asChild onClick={() => setMenuOpen(false)}>
-                  <Link to="/settings"><UserCog className="h-4 w-4 mr-1.5" />Settings</Link>
+                  <Link to="/settings"><UserCog className="h-4 w-4 mr-1.5" />{t('Settings')}</Link>
                 </Button>
                 <Button variant="ghost" size="sm" onClick={handleSignOut}>
-                  <LogOut className="h-4 w-4 mr-1.5" />Sign out
+                  <LogOut className="h-4 w-4 mr-1.5" />{t('Sign out')}
                 </Button>
               </>
             ) : (
               <>
                 <Button variant="outline" size="sm" asChild onClick={() => setMenuOpen(false)}>
-                  <Link to="/login">Sign in</Link>
+                  <Link to="/login">{t('Sign in')}</Link>
                 </Button>
                 <Button size="sm" asChild onClick={() => setMenuOpen(false)}>
-                  <Link to="/register">Get started</Link>
+                  <Link to="/register">{t('Get started')}</Link>
                 </Button>
               </>
             )}

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { useT } from '@/i18n';
 import { updateDoctorProfile, getMyProfile, updateMyProfile } from '@/services/api';
 
 const SELECT_CLASS =
@@ -43,6 +44,7 @@ type PasswordForm = z.infer<typeof passwordSchema>;
 
 export default function Settings() {
   const { user, role, setSession } = useAuthStore();
+  const t = useT();
   const [savingProfile, setSavingProfile] = useState(false);
   const [savingPassword, setSavingPassword] = useState(false);
 
@@ -65,7 +67,7 @@ export default function Settings() {
       // Refresh the local session so the header/dashboard show the new name
       const { data } = await supabase.auth.getSession();
       setSession(data.session);
-      toast.success('Profile updated.');
+      toast.success(t('Profile updated.'));
     } catch (e) {
       toast.error((e as Error).message || 'Failed to update profile');
     } finally {
@@ -79,7 +81,7 @@ export default function Settings() {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw new Error(error.message);
       password.reset();
-      toast.success('Password changed.');
+      toast.success(t('Password changed.'));
     } catch (e) {
       toast.error((e as Error).message || 'Failed to change password');
     } finally {
@@ -89,33 +91,33 @@ export default function Settings() {
 
   return (
     <div className="container max-w-2xl py-8">
-      <h1 className="mb-1 text-2xl font-bold">Account settings</h1>
-      <p className="mb-8 text-muted-foreground">Update your personal details and password.</p>
+      <h1 className="mb-1 text-2xl font-bold">{t('Account settings')}</h1>
+      <p className="mb-8 text-muted-foreground">{t('Update your personal details and password.')}</p>
 
       <div className="space-y-6">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <UserCog className="h-4 w-4 text-primary" /> Profile
+              <UserCog className="h-4 w-4 text-primary" /> {t('Profile')}
             </CardTitle>
-            <CardDescription>Your name is shown on bookings, reviews, and comments.</CardDescription>
+            <CardDescription>{t('Your name is shown on bookings, reviews, and comments.')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={profile.handleSubmit(saveProfile)} className="space-y-4" noValidate>
               <div className="space-y-1">
-                <label htmlFor="name" className="text-sm font-medium">Full name</label>
+                <label htmlFor="name" className="text-sm font-medium">{t('Full name')}</label>
                 <Input id="name" {...profile.register('name')} placeholder="Your name" />
                 {profile.formState.errors.name && (
                   <p className="text-xs text-destructive">{profile.formState.errors.name.message}</p>
                 )}
               </div>
               <div className="space-y-1">
-                <label className="text-sm font-medium">Email</label>
+                <label className="text-sm font-medium">{t('Email')}</label>
                 <Input value={user?.email ?? ''} disabled className="text-muted-foreground" />
-                <p className="text-xs text-muted-foreground">Your email is your sign-in and can&apos;t be changed here.</p>
+                <p className="text-xs text-muted-foreground">{t('Your email is your sign-in and can’t be changed here.')}</p>
               </div>
               <Button type="submit" disabled={savingProfile}>
-                {savingProfile ? 'Saving…' : 'Save profile'}
+                {savingProfile ? t('Saving…') : t('Save profile')}
               </Button>
             </form>
           </CardContent>
@@ -126,22 +128,22 @@ export default function Settings() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 text-base">
-              <KeyRound className="h-4 w-4 text-primary" /> Change password
+              <KeyRound className="h-4 w-4 text-primary" /> {t('Change password')}
             </CardTitle>
-            <CardDescription>Use at least 8 characters.</CardDescription>
+            <CardDescription>{t('Use at least 8 characters.')}</CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={password.handleSubmit(savePassword)} className="space-y-4" noValidate>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-1">
-                  <label htmlFor="new-password" className="text-sm font-medium">New password</label>
+                  <label htmlFor="new-password" className="text-sm font-medium">{t('New password')}</label>
                   <Input id="new-password" type="password" autoComplete="new-password" {...password.register('password')} />
                   {password.formState.errors.password && (
                     <p className="text-xs text-destructive">{password.formState.errors.password.message}</p>
                   )}
                 </div>
                 <div className="space-y-1">
-                  <label htmlFor="confirm-password" className="text-sm font-medium">Confirm</label>
+                  <label htmlFor="confirm-password" className="text-sm font-medium">{t('Confirm')}</label>
                   <Input id="confirm-password" type="password" autoComplete="new-password" {...password.register('confirm')} />
                   {password.formState.errors.confirm && (
                     <p className="text-xs text-destructive">{password.formState.errors.confirm.message}</p>
@@ -149,7 +151,7 @@ export default function Settings() {
                 </div>
               </div>
               <Button type="submit" disabled={savingPassword}>
-                {savingPassword ? 'Saving…' : 'Change password'}
+                {savingPassword ? t('Saving…') : t('Change password')}
               </Button>
             </form>
           </CardContent>
@@ -160,6 +162,7 @@ export default function Settings() {
 }
 
 function ProfileDetailsCard() {
+  const t = useT();
   const queryClient = useQueryClient();
   const { data: profile } = useQuery({ queryKey: ['profile', 'me'], queryFn: getMyProfile });
 
@@ -187,7 +190,7 @@ function ProfileDetailsCard() {
     mutationFn: (data: ProfileDetailsForm) => updateMyProfile({ ...data, gender: data.gender || null }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
-      toast.success('Details saved.');
+      toast.success(t('Details saved.'));
     },
     onError: (e: Error) => toast.error(e.message || 'Failed to save details'),
   });
@@ -196,44 +199,44 @@ function ProfileDetailsCard() {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <HeartPulse className="h-4 w-4 text-primary" /> Contact &amp; medical details
+          <HeartPulse className="h-4 w-4 text-primary" /> {t('Contact & medical details')}
         </CardTitle>
-        <CardDescription>Optional — helps doctors prepare for your visit. Only you can see this.</CardDescription>
+        <CardDescription>{t('Optional — helps doctors prepare for your visit. Only you can see this.')}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Labeled label="Phone"><Input {...register('phone')} placeholder="+216 …" /></Labeled>
-            <Labeled label="Date of birth"><Input type="date" {...register('date_of_birth')} /></Labeled>
-            <Labeled label="Gender">
+            <Labeled label={t('Phone')}><Input {...register('phone')} placeholder="+216 …" /></Labeled>
+            <Labeled label={t('Date of birth')}><Input type="date" {...register('date_of_birth')} /></Labeled>
+            <Labeled label={t('Gender')}>
               <select className={SELECT_CLASS} {...register('gender')}>
-                <option value="">Prefer not to say</option>
-                <option value="female">Female</option>
-                <option value="male">Male</option>
-                <option value="other">Other</option>
+                <option value="">{t('Prefer not to say')}</option>
+                <option value="female">{t('Female')}</option>
+                <option value="male">{t('Male')}</option>
+                <option value="other">{t('Other')}</option>
               </select>
             </Labeled>
-            <Labeled label="Blood type">
+            <Labeled label={t('Blood type')}>
               <select className={SELECT_CLASS} {...register('blood_type')}>
-                <option value="">Unknown</option>
+                <option value="">{t('Unknown')}</option>
                 {BLOOD_TYPES.map(b => <option key={b} value={b}>{b}</option>)}
               </select>
             </Labeled>
-            <Labeled label="City"><Input {...register('city')} placeholder="Tunis" /></Labeled>
-            <Labeled label="Emergency contact"><Input {...register('emergency_contact')} placeholder="Name · phone" /></Labeled>
+            <Labeled label={t('City')}><Input {...register('city')} placeholder="Tunis" /></Labeled>
+            <Labeled label={t('Emergency contact')}><Input {...register('emergency_contact')} placeholder="Name · phone" /></Labeled>
           </div>
-          <Labeled label="Address"><Input {...register('address')} placeholder="Street, city" /></Labeled>
-          <Labeled label="Allergies & notes">
+          <Labeled label={t('Address')}><Input {...register('address')} placeholder="Street, city" /></Labeled>
+          <Labeled label={t('Allergies & notes')}>
             <textarea
               {...register('allergies')}
               rows={3}
               maxLength={500}
-              placeholder="Allergies, chronic conditions, medication…"
+              placeholder={t('Allergies, chronic conditions, medication…')}
               className="w-full resize-none rounded-lg border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
             />
           </Labeled>
           <Button type="submit" disabled={mutation.isPending}>
-            {mutation.isPending ? 'Saving…' : 'Save details'}
+            {mutation.isPending ? t('Saving…') : t('Save details')}
           </Button>
         </form>
       </CardContent>

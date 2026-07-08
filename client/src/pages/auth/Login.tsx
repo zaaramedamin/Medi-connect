@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/authStore';
+import { useT } from '@/i18n';
 import { useState } from 'react';
 
 const schema = z.object({
@@ -19,6 +20,7 @@ type FormData = z.infer<typeof schema>;
 export default function Login() {
   const [serverError, setServerError] = useState<string | null>(null);
   const { signIn } = useAuthStore();
+  const t = useT();
   const navigate = useNavigate();
 
   const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<FormData>({
@@ -43,22 +45,22 @@ export default function Login() {
           <div className="flex justify-center mb-2">
             <Stethoscope className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Welcome back</CardTitle>
-          <CardDescription>Sign in to your MediConnect account</CardDescription>
+          <CardTitle className="text-2xl">{t('Welcome back')}</CardTitle>
+          <CardDescription>{t('Sign in to your MediConnect account')}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
             <div className="space-y-1">
-              <label htmlFor="email" className="text-sm font-medium">Email</label>
+              <label htmlFor="email" className="text-sm font-medium">{t('Email')}</label>
               <Input id="email" type="email" placeholder="you@example.com" autoComplete="email" {...register('email')} />
               {errors.email && <p className="text-xs text-destructive">{errors.email.message}</p>}
             </div>
 
             <div className="space-y-1">
               <div className="flex items-center justify-between">
-                <label htmlFor="password" className="text-sm font-medium">Password</label>
+                <label htmlFor="password" className="text-sm font-medium">{t('Password')}</label>
                 <Link to="/forgot-password" className="text-xs font-medium text-primary hover:underline">
-                  Forgot password?
+                  {t('Forgot password?')}
                 </Link>
               </div>
               <Input id="password" type="password" placeholder="••••••••" autoComplete="current-password" {...register('password')} />
@@ -70,13 +72,13 @@ export default function Login() {
             )}
 
             <Button type="submit" className="w-full" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+              {isSubmitting ? t('Signing in...') : t('Sign in')}
             </Button>
           </form>
 
           <p className="text-center text-sm text-muted-foreground mt-4">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary hover:underline font-medium">Create one</Link>
+            {t("Don't have an account?")}{' '}
+            <Link to="/register" className="text-primary hover:underline font-medium">{t('Create one')}</Link>
           </p>
         </CardContent>
       </Card>

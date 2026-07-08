@@ -9,6 +9,7 @@ import { CartDrawer } from '@/components/features/CartDrawer';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuthInit } from '@/hooks/useAuth';
+import { I18nProvider } from '@/i18n';
 
 const Home = lazy(() => import('@/pages/Home'));
 const Login = lazy(() => import('@/pages/auth/Login'));
@@ -135,10 +136,12 @@ function AppRoutes() {
 
 export default function App() {
   return (
-    <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <AppRoutes />
-      </BrowserRouter>
-    </QueryClientProvider>
+    <I18nProvider>
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>
+          <AppRoutes />
+        </BrowserRouter>
+      </QueryClientProvider>
+    </I18nProvider>
   );
 }

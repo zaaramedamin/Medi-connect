@@ -7,6 +7,7 @@ import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { ProductCard } from '@/components/features/ProductCard';
 import { ProductQuickView } from '@/components/features/ProductQuickView';
 import { PRODUCTS, PRODUCT_CATEGORIES, type Product } from '@/data/products';
+import { useT } from '@/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
 import { cn } from '@/lib/utils';
 
@@ -18,6 +19,7 @@ const SELECT_CLASS =
   'h-10 rounded-xl border bg-card px-3 text-sm font-medium text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring cursor-pointer';
 
 export default function Shop() {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<(typeof CATEGORY_FILTERS)[number]>('All');
   const [sort, setSort] = useState<SortMode>('featured');
@@ -51,17 +53,17 @@ export default function Shop() {
         <div className="container relative py-16 text-white md:py-20">
           <BlurFade>
             <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-              <ShoppingBag className="h-3.5 w-3.5" /> Health shop
+              <ShoppingBag className="h-3.5 w-3.5" /> {t('Health shop')}
             </span>
             <h1 className="text-3xl font-extrabold md:text-4xl">
-              <AnimatedText text="Parapharmacie & wellness" />
+              <AnimatedText text={t('Parapharmacie & wellness')} />
             </h1>
             <p className="mt-2 max-w-xl text-white/85">
-              Home health devices, supplements, skincare, and everyday essentials — delivered to your door.
+              {t('Home health devices, supplements, skincare, and everyday essentials — delivered to your door.')}
             </p>
             <div className="mt-5 flex flex-wrap gap-x-6 gap-y-2 text-sm text-white/85">
-              <span className="flex items-center gap-1.5"><Truck className="h-4 w-4" />Free delivery over 150 DT</span>
-              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" />Authentic products</span>
+              <span className="flex items-center gap-1.5"><Truck className="h-4 w-4" />{t('Free delivery over 150 DT')}</span>
+              <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4" />{t('Authentic products')}</span>
             </div>
           </BlurFade>
         </div>
@@ -75,7 +77,7 @@ export default function Shop() {
               <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 className="h-11 rounded-xl pl-11"
-                placeholder="Search products…"
+                placeholder={t('Search products…')}
                 value={query}
                 onChange={e => setQuery(e.target.value)}
                 aria-label="Search products"
@@ -91,10 +93,10 @@ export default function Shop() {
               )}
             </div>
             <select value={sort} onChange={e => setSort(e.target.value as SortMode)} className={SELECT_CLASS} aria-label="Sort products">
-              <option value="featured">Sort: Featured</option>
-              <option value="rating">Top rated</option>
-              <option value="price-asc">Price: low to high</option>
-              <option value="price-desc">Price: high to low</option>
+              <option value="featured">{t('Sort: Featured')}</option>
+              <option value="rating">{t('Top rated')}</option>
+              <option value="price-asc">{t('Price: low to high')}</option>
+              <option value="price-desc">{t('Price: high to low')}</option>
             </select>
           </div>
 
@@ -111,7 +113,7 @@ export default function Shop() {
                     : 'bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'
                 )}
               >
-                {c}
+                {t(c)}
               </button>
             ))}
           </div>
@@ -134,8 +136,8 @@ export default function Shop() {
         ) : (
           <div className="py-20 text-center text-muted-foreground">
             <ShoppingBag className="mx-auto mb-4 h-12 w-12 opacity-30" />
-            <p className="text-lg font-medium text-foreground">No products found</p>
-            <p className="mt-1 text-sm">Try a different search or category.</p>
+            <p className="text-lg font-medium text-foreground">{t('No products found')}</p>
+            <p className="mt-1 text-sm">{t('Try a different search or category.')}</p>
           </div>
         )}
       </section>

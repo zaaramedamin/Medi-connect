@@ -20,6 +20,7 @@ import { HealthProducts } from '@/components/features/HealthProducts';
 import { TestimonialCarousel } from '@/components/features/TestimonialCarousel';
 import { ArticleCard } from '@/components/features/ArticleCard';
 import { searchDoctors, getArticles } from '@/services/api';
+import { useT } from '@/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
 import { haversineKm, cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
@@ -63,6 +64,7 @@ const STEPS = [
 ] as const;
 
 export default function Home() {
+  const t = useT();
   const [query, setQuery] = useState('');
   const [specialty, setSpecialty] = useState('');
   const [city, setCity] = useState('');
@@ -79,7 +81,7 @@ export default function Home() {
   const locateMe = () => {
     setGeoError(null);
     if (!navigator.geolocation) {
-      setGeoError('Geolocation is not supported by your browser.');
+      setGeoError(t('Geolocation is not supported by your browser.'));
       return;
     }
     navigator.geolocation.getCurrentPosition(
@@ -87,7 +89,7 @@ export default function Home() {
         setUserLoc({ lat: pos.coords.latitude, lng: pos.coords.longitude });
         setSort('nearest');
       },
-      () => setGeoError('Could not get your location. Please allow location access.')
+      () => setGeoError(t('Could not get your location. Please allow location access.'))
     );
   };
 
@@ -157,7 +159,7 @@ export default function Home() {
             <BlurFade>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-secondary text-secondary-foreground px-3 py-1 text-xs font-semibold mb-5">
                 <BadgeCheck className="h-3.5 w-3.5" />
-                Trusted by patients across the country
+                {t('Trusted by patients across the country')}
               </span>
             </BlurFade>
             <h1 className="text-4xl md:text-5xl xl:text-[3.4rem] font-extrabold leading-[1.1] mb-5 min-h-[2.4em]">
@@ -180,7 +182,7 @@ export default function Home() {
             </h1>
             <BlurFade delay={1.7}>
               <p className="text-lg text-muted-foreground mb-8 max-w-lg">
-                Search verified doctors, see their real-time availability, and confirm your visit instantly — no phone calls needed.
+                {t('Search verified doctors, see their real-time availability, and confirm your visit instantly — no phone calls needed.')}
               </p>
             </BlurFade>
 
@@ -189,7 +191,7 @@ export default function Home() {
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                 <Input
                   className="pl-12 pr-4 h-14 text-base rounded-2xl border-2 bg-card shadow-lg shadow-primary/5 focus-visible:ring-2 transition-shadow focus:shadow-xl focus:shadow-primary/10"
-                  placeholder="Condition, specialty, doctor name, or city..."
+                  placeholder={t('Condition, specialty, doctor name, or city...')}
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   aria-label="Search doctors"
@@ -199,9 +201,9 @@ export default function Home() {
 
             <BlurFade delay={2}>
               <div className="flex flex-wrap gap-x-6 gap-y-2 mt-6 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-accent" />Verified doctors</span>
-                <span className="flex items-center gap-1.5"><CalendarCheck className="h-4 w-4 text-accent" />Instant confirmation</span>
-                <span className="flex items-center gap-1.5"><Star className="h-4 w-4 text-accent" />Free cancellation</span>
+                <span className="flex items-center gap-1.5"><ShieldCheck className="h-4 w-4 text-accent" />{t('Verified doctors')}</span>
+                <span className="flex items-center gap-1.5"><CalendarCheck className="h-4 w-4 text-accent" />{t('Instant confirmation')}</span>
+                <span className="flex items-center gap-1.5"><Star className="h-4 w-4 text-accent" />{t('Free cancellation')}</span>
               </div>
             </BlurFade>
           </div>
@@ -225,29 +227,29 @@ export default function Home() {
           {/* Filter bar */}
           <div className="mb-6 flex flex-wrap items-center gap-2">
             <span className="flex items-center gap-1.5 text-sm font-semibold text-muted-foreground mr-1">
-              <SlidersHorizontal className="h-4 w-4" /> Filters
+              <SlidersHorizontal className="h-4 w-4" /> {t('Filters')}
             </span>
             <select value={specialty} onChange={e => setSpecialty(e.target.value)} className={SELECT_CLASS} aria-label="Filter by specialty">
-              <option value="">All specialties</option>
+              <option value="">{t('All specialties')}</option>
               {ALL_SPECIALTIES.map(s => <option key={s} value={s}>{s}</option>)}
             </select>
             <select value={city} onChange={e => setCity(e.target.value)} className={SELECT_CLASS} aria-label="Filter by city">
-              <option value="">All cities</option>
+              <option value="">{t('All cities')}</option>
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
             <select value={sort} onChange={e => setSort(e.target.value as SortMode)} className={SELECT_CLASS} aria-label="Sort results">
-              <option value="relevance">Sort: Relevance</option>
-              <option value="rating">Top rated</option>
-              <option value="nearest">Nearest to me</option>
-              <option value="price-asc">Price: low to high</option>
-              <option value="price-desc">Price: high to low</option>
+              <option value="relevance">{t('Sort: Relevance')}</option>
+              <option value="rating">{t('Top rated')}</option>
+              <option value="nearest">{t('Nearest to me')}</option>
+              <option value="price-asc">{t('Price: low to high')}</option>
+              <option value="price-desc">{t('Price: high to low')}</option>
             </select>
             <Button variant="outline" size="sm" onClick={locateMe} className="h-10 rounded-xl">
-              <LocateFixed className="h-4 w-4 mr-1" /> Near me
+              <LocateFixed className="h-4 w-4 mr-1" /> {t('Near me')}
             </Button>
             {(hasFilters || query || browseAll) && (
               <Button variant="ghost" size="sm" onClick={clearFilters} className="text-muted-foreground">
-                <X className="h-4 w-4 mr-1" /> Clear
+                <X className="h-4 w-4 mr-1" /> {t('Clear')}
               </Button>
             )}
 
@@ -262,7 +264,7 @@ export default function Home() {
                     view === mode ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'
                   )}
                 >
-                  <Icon className="h-4 w-4" /> {label}
+                  <Icon className="h-4 w-4" /> {t(label)}
                 </button>
               ))}
             </div>
@@ -296,8 +298,8 @@ export default function Home() {
           ) : (
             <div className="text-center py-20 text-muted-foreground">
               <Search className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p className="text-lg font-medium text-foreground">No doctors found</p>
-              <p className="text-sm mt-1">Try a different name, specialty, or location.</p>
+              <p className="text-lg font-medium text-foreground">{t('No doctors found')}</p>
+              <p className="text-sm mt-1">{t('Try a different name, specialty, or location.')}</p>
             </div>
           )}
         </section>
@@ -308,14 +310,14 @@ export default function Home() {
             <BlurFade>
               <div className="flex items-end justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-1"><AnimatedText text="Top-rated doctors" /></h2>
-                  <p className="text-muted-foreground text-sm">The highest-rated doctors on MediConnect right now.</p>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-1"><AnimatedText text={t('Top-rated doctors')} /></h2>
+                  <p className="text-muted-foreground text-sm">{t('The highest-rated doctors on MediConnect right now.')}</p>
                 </div>
                 <button
                   onClick={() => setBrowseAll(true)}
                   className="hidden sm:inline text-sm font-semibold text-primary hover:underline"
                 >
-                  Browse all →
+                  {t('Browse all →')}
                 </button>
               </div>
             </BlurFade>
@@ -333,7 +335,7 @@ export default function Home() {
                 ))}
               </div>
             ) : (
-              <p className="text-muted-foreground text-sm">No doctors available yet.</p>
+              <p className="text-muted-foreground text-sm">{t('No doctors available yet.')}</p>
             )}
           </section>
 
@@ -342,8 +344,8 @@ export default function Home() {
             <BlurFade>
               <div className="flex items-end justify-between mb-8">
                 <div>
-                  <h2 className="text-2xl md:text-3xl font-bold mb-1"><AnimatedText text="Browse by specialty" /></h2>
-                  <p className="text-muted-foreground text-sm">Tap a specialty to see available doctors.</p>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-1"><AnimatedText text={t('Browse by specialty')} /></h2>
+                  <p className="text-muted-foreground text-sm">{t('Tap a specialty to see available doctors.')}</p>
                 </div>
               </div>
             </BlurFade>
@@ -369,8 +371,8 @@ export default function Home() {
             <div className="container">
               <BlurFade>
                 <div className="text-center max-w-xl mx-auto mb-12">
-                  <h2 className="text-2xl md:text-3xl font-bold mb-3"><AnimatedText text="Book a visit in three steps" /></h2>
-                  <p className="text-muted-foreground">From search to confirmation in less than a minute.</p>
+                  <h2 className="text-2xl md:text-3xl font-bold mb-3"><AnimatedText text={t('Book a visit in three steps')} /></h2>
+                  <p className="text-muted-foreground">{t('From search to confirmation in less than a minute.')}</p>
                 </div>
               </BlurFade>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -378,8 +380,8 @@ export default function Home() {
                   <BlurFade key={step} delay={0.12 * i}>
                     <div className="relative h-full rounded-2xl border bg-card p-7">
                       <span className="font-display text-5xl font-extrabold text-primary/15 absolute top-5 right-6 select-none">{step}</span>
-                      <h3 className="font-bold text-lg mb-2">{title}</h3>
-                      <p className="text-muted-foreground text-sm leading-relaxed">{desc}</p>
+                      <h3 className="font-bold text-lg mb-2">{t(title)}</h3>
+                      <p className="text-muted-foreground text-sm leading-relaxed">{t(desc)}</p>
                     </div>
                   </BlurFade>
                 ))}
@@ -400,11 +402,11 @@ export default function Home() {
               </BlurFade>
               <BlurFade className="order-1 lg:order-2">
                 <span className="inline-block rounded-full bg-accent/10 text-accent px-3 py-1 text-xs font-semibold mb-4">
-                  For practitioners
+                  {t('For practitioners')}
                 </span>
-                <h2 className="text-2xl md:text-3xl font-bold mb-4"><AnimatedText text="Grow your practice with MediConnect" /></h2>
+                <h2 className="text-2xl md:text-3xl font-bold mb-4"><AnimatedText text={t('Grow your practice with MediConnect')} /></h2>
                 <p className="text-muted-foreground mb-8 max-w-lg">
-                  Set your working hours once — patients book only the slots you offer. Block time off in one click and keep every appointment in a single dashboard. Membership is by invitation — our team verifies every doctor before listing.
+                  {t('Set your working hours once — patients book only the slots you offer. Block time off in one click and keep every appointment in a single dashboard. Membership is by invitation — our team verifies every doctor before listing.')}
                 </p>
                 <div className="grid grid-cols-3 gap-4 mb-8 max-w-md">
                   {[
@@ -416,12 +418,12 @@ export default function Home() {
                       <p className="text-2xl font-bold text-primary font-display">
                         <NumberTicker value={s.value} suffix={s.suffix} decimalPlaces={s.decimals} />
                       </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{s.label}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{t(s.label)}</p>
                     </div>
                   ))}
                 </div>
                 <Button size="lg" asChild>
-                  <a href="mailto:partners@mediconnect.tn">Partner with us <ArrowRight className="h-4 w-4 ml-1.5" /></a>
+                  <a href="mailto:partners@mediconnect.tn">{t('Partner with us')} <ArrowRight className="h-4 w-4 ml-1.5" /></a>
                 </Button>
               </BlurFade>
             </div>
@@ -437,13 +439,13 @@ export default function Home() {
                 <div className="mb-8 flex items-end justify-between gap-4">
                   <div>
                     <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
-                      <Stethoscope className="h-3.5 w-3.5" /> Health insights
+                      <Stethoscope className="h-3.5 w-3.5" /> {t('Health insights')}
                     </span>
-                    <h2 className="mb-1 text-2xl font-bold md:text-3xl"><AnimatedText text="From our doctors — reports & advice" /></h2>
-                    <p className="text-sm text-muted-foreground">Trusted guidance and public updates, written by the doctors on MediConnect.</p>
+                    <h2 className="mb-1 text-2xl font-bold md:text-3xl"><AnimatedText text={t('From our doctors — reports & advice')} /></h2>
+                    <p className="text-sm text-muted-foreground">{t('Trusted guidance and public updates, written by the doctors on MediConnect.')}</p>
                   </div>
                   <Link to="/community" className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-primary hover:underline sm:inline-flex">
-                    Read the community <ArrowRight className="h-4 w-4" />
+                    {t('Read the community')} <ArrowRight className="h-4 w-4" />
                   </Link>
                 </div>
               </BlurFade>
@@ -460,7 +462,7 @@ export default function Home() {
           {/* Testimonials */}
           <section className="bg-muted/50 py-16 overflow-hidden">
             <BlurFade>
-              <h2 className="text-2xl md:text-3xl font-bold text-center mb-12"><AnimatedText text="Loved by patients and doctors" /></h2>
+              <h2 className="text-2xl md:text-3xl font-bold text-center mb-12"><AnimatedText text={t('Loved by patients and doctors')} /></h2>
             </BlurFade>
             <TestimonialCarousel />
           </section>
@@ -473,10 +475,10 @@ export default function Home() {
               <div aria-hidden className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10" />
               <div aria-hidden className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-white/10" />
               <h2 className="relative text-2xl md:text-4xl font-bold text-white mb-4">
-                <AnimatedText text="Ready for your next appointment?" />
+                <AnimatedText text={t('Ready for your next appointment?')} />
               </h2>
               <p className="relative text-white/85 max-w-md mx-auto mb-8">
-                Create a free account and book your first visit today. Your data stays encrypted and is never sold.
+                {t('Create a free account and book your first visit today. Your data stays encrypted and is never sold.')}
               </p>
               <Button
                 size="lg"
@@ -484,7 +486,7 @@ export default function Home() {
                 className="relative bg-white text-primary hover:bg-white/90 font-semibold"
                 asChild
               >
-                <Link to="/register">Get started — it's free</Link>
+                <Link to="/register">{t("Get started — it's free")}</Link>
               </Button>
             </div>
             </BlurFade>

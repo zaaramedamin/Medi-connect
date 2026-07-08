@@ -9,6 +9,7 @@ import { BlurFade } from '@/components/ui/blur-fade';
 import { AnimatedText } from '@/components/ui/animated-text';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { TestimonialCarousel } from '@/components/features/TestimonialCarousel';
+import { useT } from '@/i18n';
 import doctorCta from '@/assets/doctor-cta.svg';
 
 const STATS = [
@@ -52,6 +53,7 @@ const FAQS = [
 ];
 
 export default function WhyMediConnect() {
+  const t = useT();
   return (
     <div className="animate-fade-in">
       {/* ── Hero ─────────────────────────────────────────────────────── */}
@@ -71,8 +73,8 @@ export default function WhyMediConnect() {
               </span>
             </BlurFade>
             <BlurFade delay={0.05}>
-              <h1 className="mb-5 text-4xl font-extrabold leading-[1.1] md:text-5xl xl:text-[3.4rem]">
-                Healthcare that finally <span className="text-primary">respects your time</span>
+              <h1 className="mb-5 text-4xl font-extrabold leading-[1.1] text-primary md:text-5xl xl:text-[3.4rem]">
+                <span className="text-foreground">{t('Healthcare that finally')} </span>{t('respects your time')}
               </h1>
             </BlurFade>
             <BlurFade delay={0.1}>
@@ -377,6 +379,7 @@ function FeatureRow({
 }: {
   image: string; alt: string; eyebrow: string; title: string; text: string; points: string[]; reverse?: boolean;
 }) {
+  const t = useT();
   return (
     <section className="container py-16 md:py-20">
       <div className="grid items-center gap-10 lg:grid-cols-2">
@@ -385,7 +388,7 @@ function FeatureRow({
         </BlurFade>
         <BlurFade className={reverse ? 'order-1 lg:order-1' : 'order-1 lg:order-2'}>
           <span className="mb-3 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">{eyebrow}</span>
-          <h2 className="mb-4 text-2xl font-bold md:text-3xl"><AnimatedText text={title} /></h2>
+          <h2 className="mb-4 text-2xl font-bold md:text-3xl"><AnimatedText text={t(title)} /></h2>
           <p className="mb-6 max-w-lg text-muted-foreground">{text}</p>
           <ul className="space-y-2.5">
             {points.map(p => (

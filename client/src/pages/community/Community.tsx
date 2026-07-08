@@ -11,11 +11,13 @@ import { ArticleCard } from '@/components/features/ArticleCard';
 import { ARTICLE_FILTERS } from '@/data/articleMeta';
 import { getArticles } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useT } from '@/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
 import { cn } from '@/lib/utils';
 
 export default function Community() {
   const { role } = useAuthStore();
+  const t = useT();
   const [category, setCategory] = useState<string>('all');
   const [query, setQuery] = useState('');
   const debounced = useDebounce(query, 250);
@@ -41,19 +43,19 @@ export default function Community() {
         <div className="container relative flex flex-col gap-6 py-16 text-white md:flex-row md:items-end md:justify-between md:py-20">
           <BlurFade>
             <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold text-white backdrop-blur">
-              <MessagesSquare className="h-3.5 w-3.5" /> Community
+              <MessagesSquare className="h-3.5 w-3.5" /> {t('Community')}
             </span>
             <h1 className="text-3xl font-extrabold md:text-4xl">
-              <AnimatedText text="Doctor insights & advice" />
+              <AnimatedText text={t('Doctor insights & advice')} />
             </h1>
             <p className="mt-2 max-w-xl text-white/85">
-              Public health reports and practical advice from our doctors — and a space for them to share and discuss.
+              {t('Public health reports and practical advice from our doctors — and a space for them to share and discuss.')}
             </p>
           </BlurFade>
           {(role === 'doctor' || role === 'admin') && (
             <BlurFade delay={0.1}>
               <Button className="bg-white text-primary hover:bg-white/90" asChild>
-                <Link to="/community/new"><PenSquare className="mr-1.5 h-4 w-4" /> Write an article</Link>
+                <Link to="/community/new"><PenSquare className="mr-1.5 h-4 w-4" /> {t('Write an article')}</Link>
               </Button>
             </BlurFade>
           )}
@@ -75,7 +77,7 @@ export default function Community() {
                     : 'bg-card text-muted-foreground hover:border-primary/40 hover:text-foreground'
                 )}
               >
-                {f.label}
+                {t(f.label)}
               </button>
             ))}
           </div>
@@ -83,7 +85,7 @@ export default function Community() {
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-10 rounded-xl pl-10"
-              placeholder="Search articles…"
+              placeholder={t('Search articles…')}
               value={query}
               onChange={e => setQuery(e.target.value)}
               aria-label="Search articles"
@@ -115,9 +117,9 @@ export default function Community() {
         ) : (
           <div className="py-20 text-center text-muted-foreground">
             <MessagesSquare className="mx-auto mb-4 h-12 w-12 opacity-30" />
-            <p className="text-lg font-medium text-foreground">No articles yet</p>
+            <p className="text-lg font-medium text-foreground">{t('No articles yet')}</p>
             <p className="mt-1 text-sm">
-              {role === 'doctor' ? 'Be the first to share an insight with your patients.' : 'Check back soon for advice from our doctors.'}
+              {role === 'doctor' ? t('Be the first to share an insight with your patients.') : t('Check back soon for advice from our doctors.')}
             </p>
           </div>
         )}

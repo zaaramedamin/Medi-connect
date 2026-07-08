@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
+import { useT } from '@/i18n';
 
 const schema = z
   .object({
@@ -26,6 +27,7 @@ type FormData = z.infer<typeof schema>;
 export default function ResetPassword() {
   const navigate = useNavigate();
   const { user, loading } = useAuthStore();
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   const [ready, setReady] = useState(false);
 
@@ -46,7 +48,7 @@ export default function ResetPassword() {
       setServerError(error.message);
       return;
     }
-    toast.success('Password updated — you are signed in.');
+    toast.success(t('Password updated — you are signed in.'));
     const role = useAuthStore.getState().role;
     navigate(role === 'admin' ? '/admin' : role === 'doctor' ? '/doctor/dashboard' : '/patient/dashboard');
   };
@@ -60,28 +62,28 @@ export default function ResetPassword() {
           <div className="mb-2 flex justify-center">
             <ShieldCheck className="h-8 w-8 text-primary" />
           </div>
-          <CardTitle className="text-2xl">Choose a new password</CardTitle>
-          <CardDescription>Your account will use this password from now on.</CardDescription>
+          <CardTitle className="text-2xl">{t('Choose a new password')}</CardTitle>
+          <CardDescription>{t('Your account will use this password from now on.')}</CardDescription>
         </CardHeader>
         <CardContent>
           {noSession ? (
             <div className="py-4 text-center">
               <p className="text-sm text-muted-foreground">
-                This reset link is invalid or has expired. Request a fresh one and try again.
+                {t('This reset link is invalid or has expired. Request a fresh one and try again.')}
               </p>
               <Button variant="outline" className="mt-5" asChild>
-                <Link to="/forgot-password">Request a new link</Link>
+                <Link to="/forgot-password">{t('Request a new link')}</Link>
               </Button>
             </div>
           ) : (
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
               <div className="space-y-1">
-                <label htmlFor="password" className="text-sm font-medium">New password</label>
+                <label htmlFor="password" className="text-sm font-medium">{t('New password')}</label>
                 <Input id="password" type="password" placeholder="••••••••" autoComplete="new-password" {...register('password')} />
                 {errors.password && <p className="text-xs text-destructive">{errors.password.message}</p>}
               </div>
               <div className="space-y-1">
-                <label htmlFor="confirm" className="text-sm font-medium">Confirm password</label>
+                <label htmlFor="confirm" className="text-sm font-medium">{t('Confirm password')}</label>
                 <Input id="confirm" type="password" placeholder="••••••••" autoComplete="new-password" {...register('confirm')} />
                 {errors.confirm && <p className="text-xs text-destructive">{errors.confirm.message}</p>}
               </div>
@@ -91,7 +93,7 @@ export default function ResetPassword() {
               )}
 
               <Button type="submit" className="w-full" disabled={isSubmitting}>
-                {isSubmitting ? 'Saving…' : 'Set new password'}
+                {isSubmitting ? t('Saving…') : t('Set new password')}
               </Button>
             </form>
           )}
