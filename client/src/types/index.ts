@@ -80,8 +80,11 @@ export interface Article {
   id: number;
   author_id: string;
   title: string;
+  /** French translation — present on seeded articles once the bilingual migration has run. */
+  title_fr?: string | null;
   category: ArticleCategory;
   excerpt: string | null;
+  excerpt_fr?: string | null;
   cover_image: string | null;
   created_at: string;
   author: ArticleAuthor;
@@ -98,6 +101,7 @@ export interface ArticleComment {
 
 export interface ArticleDetail extends Omit<Article, 'comment_count'> {
   body: string;
+  body_fr?: string | null;
   comments: ArticleComment[];
 }
 

@@ -5,10 +5,10 @@ import { ArrowLeft, MessageCircle, Send, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { BlurFade } from '@/components/ui/blur-fade';
 import { AuthorAvatar } from '@/components/features/ArticleCard';
-import { ARTICLE_CATEGORY_META, articleCover, formatArticleDate } from '@/data/articleMeta';
+import { ARTICLE_CATEGORY_META, articleCover, articleText, formatArticleDate } from '@/data/articleMeta';
 import { getArticle, addArticleComment, deleteArticle } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
-import { useT } from '@/i18n';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/utils';
 
 export default function Article() {
@@ -16,7 +16,7 @@ export default function Article() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user, role } = useAuthStore();
-  const t = useT();
+  const { t, lang } = useI18n();
   const [comment, setComment] = useState('');
 
   const { data: article, isLoading, isError } = useQuery({
@@ -63,7 +63,9 @@ export default function Article() {
   const meta = ARTICLE_CATEGORY_META[article.category];
   const Icon = meta.icon;
   const canDelete = !!user && (user.id === article.author_id || role === 'admin');
-  const paragraphs = article.body.replace(/\\n/g, '\n').split(/\n{2,}/).filter(Boolean);
+  const title = articleText(lang, article.title, article.title_fr);
+  const body = articleText(lang, article.body, article.body_fr);
+  const paragraphs = body.replace(/\\n/g, '\n').split(/\n{2,}/).filter(Boolean);
 
   return (
     <article className="animate-fade-in">
@@ -77,7 +79,7 @@ export default function Article() {
             <span className={cn('inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-semibold', meta.badge)}>
               <Icon className="h-3.5 w-3.5" /> {t(meta.label)}
             </span>
-            <h1 className="mt-4 text-3xl font-extrabold leading-tight md:text-4xl">{article.title}</h1>
+            <h1 className="mt-4 text-3xl font-extrabold leading-tight md:text-4xl">{title}</h1>
 
             <div className="mt-5 flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">

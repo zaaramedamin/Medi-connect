@@ -60,17 +60,47 @@ async function getCommenter(id: string): Promise<{ name: string; role: string }>
   return { name: (meta.name as string) ?? 'User', role: (meta.role as string) ?? 'patient' };
 }
 
+// Select lists with and without the French columns, so the API keeps working
+// when the articles-bilingual.sql migration hasn't been run yet (42703 = undefined column).
+const LIST_FIELDS = 'id, author_id, title, title_fr, category, excerpt, excerpt_fr, cover_image, created_at';
+const LIST_FIELDS_LEGACY = 'id, author_id, title, category, excerpt, cover_image, created_at';
+const DETAIL_FIELDS = 'id, author_id, title, title_fr, category, excerpt, excerpt_fr, body, body_fr, cover_image, created_at';
+const DETAIL_FIELDS_LEGACY = 'id, author_id, title, category, excerpt, body, cover_image, created_at';
+
+const isMissingColumn = (error: { code?: string } | null) => error?.code === '42703';
+
+interface ArticleListRow {
+  id: number;
+  author_id: string;
+  title: string;
+  title_fr?: string | null;
+  category: string;
+  excerpt: string | null;
+  excerpt_fr?: string | null;
+  cover_image: string | null;
+  created_at: string;
+}
+
+interface ArticleDetailRow extends ArticleListRow {
+  body: string;
+  body_fr?: string | null;
+}
+
 // GET /api/articles — list (public). Optional ?category=report|advice|discussion
 router.get('/', async (req, res) => {
   const category = String(req.query.category ?? '');
-  let query = supabaseAdmin
-    .from('articles')
-    .select('id, author_id, title, category, excerpt, cover_image, created_at')
-    .order('created_at', { ascending: false });
+  const fetchList = async (fields: string) => {
+    let query = supabaseAdmin
+      .from('articles')
+      .select(fields)
+      .order('created_at', { ascending: false });
+    if (CATEGORIES.includes(category)) query = query.eq('category', category);
+    const { data, error } = await query;
+    return { data: data as unknown as ArticleListRow[] | null, error };
+  };
 
-  if (CATEGORIES.includes(category)) query = query.eq('category', category);
-
-  const { data, error } = await query;
+  let { data, error } = await fetchList(LIST_FIELDS);
+  if (isMissingColumn(error)) ({ data, error } = await fetchList(LIST_FIELDS_LEGACY));
   if (error) return res.status(500).json({ error: 'Failed to fetch articles' });
 
   const list = data ?? [];
@@ -95,12 +125,17 @@ router.get('/', async (req, res) => {
 
 // GET /api/articles/:id — single article with author + discussion (public)
 router.get('/:id', async (req, res) => {
-  const { data: article, error } = await supabaseAdmin
-    .from('articles')
-    .select('id, author_id, title, category, excerpt, body, cover_image, created_at')
-    .eq('id', req.params.id)
-    .maybeSingle();
+  const fetchDetail = async (fields: string) => {
+    const { data, error } = await supabaseAdmin
+      .from('articles')
+      .select(fields)
+      .eq('id', req.params.id)
+      .maybeSingle();
+    return { data: data as unknown as ArticleDetailRow | null, error };
+  };
 
+  let { data: article, error } = await fetchDetail(DETAIL_FIELDS);
+  if (isMissingColumn(error)) ({ data: article, error } = await fetchDetail(DETAIL_FIELDS_LEGACY));
   if (error) return res.status(500).json({ error: 'Failed to fetch article' });
   if (!article) return res.status(404).json({ error: 'Article not found' });
 

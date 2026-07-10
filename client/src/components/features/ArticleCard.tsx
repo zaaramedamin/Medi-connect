@@ -1,14 +1,16 @@
 import { Link } from 'react-router-dom';
 import { MessageCircle } from 'lucide-react';
-import { ARTICLE_CATEGORY_META, articleCover, formatArticleDate } from '@/data/articleMeta';
-import { useT } from '@/i18n';
+import { ARTICLE_CATEGORY_META, articleCover, articleText, formatArticleDate } from '@/data/articleMeta';
+import { useI18n } from '@/i18n';
 import type { Article } from '@/types';
 import { cn } from '@/lib/utils';
 
 export function ArticleCard({ article }: { article: Article }) {
-  const t = useT();
+  const { t, lang } = useI18n();
   const meta = ARTICLE_CATEGORY_META[article.category];
   const Icon = meta.icon;
+  const title = articleText(lang, article.title, article.title_fr);
+  const excerpt = articleText(lang, article.excerpt, article.excerpt_fr);
 
   return (
     <Link
@@ -28,8 +30,8 @@ export function ArticleCard({ article }: { article: Article }) {
       </div>
 
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="line-clamp-2 font-semibold leading-snug transition-colors group-hover:text-primary">{article.title}</h3>
-        {article.excerpt && <p className="mt-1.5 line-clamp-2 flex-1 text-sm text-muted-foreground">{article.excerpt}</p>}
+        <h3 className="line-clamp-2 font-semibold leading-snug transition-colors group-hover:text-primary">{title}</h3>
+        {excerpt && <p className="mt-1.5 line-clamp-2 flex-1 text-sm text-muted-foreground">{excerpt}</p>}
 
         <div className="mt-4 flex items-center gap-2.5 border-t pt-3">
           <AuthorAvatar name={article.author.name} photo={article.author.photos_url} />

@@ -24,5 +24,9 @@ export const ARTICLE_DEFAULT_COVER: Record<ArticleCategory, string> = {
 export const articleCover = (a: { cover_image: string | null; category: ArticleCategory }) =>
   a.cover_image || ARTICLE_DEFAULT_COVER[a.category];
 
+/** Pick the localized value of a bilingual article field, falling back to English. */
+export const articleText = (lang: string, en: string | null | undefined, fr: string | null | undefined) =>
+  (lang === 'fr' && fr) || en || '';
+
 export const formatArticleDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });

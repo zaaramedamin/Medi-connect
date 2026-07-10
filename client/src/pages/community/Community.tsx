@@ -30,8 +30,8 @@ export default function Community() {
   const filtered = useMemo(() => {
     const q = debounced.toLowerCase().trim();
     if (!q) return articles ?? [];
-    return (articles ?? []).filter(
-      a => a.title.toLowerCase().includes(q) || (a.excerpt ?? '').toLowerCase().includes(q)
+    return (articles ?? []).filter(a =>
+      [a.title, a.title_fr, a.excerpt, a.excerpt_fr].some(text => (text ?? '').toLowerCase().includes(q))
     );
   }, [articles, debounced]);
 
