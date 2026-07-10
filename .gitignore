@@ -167,3 +167,8 @@ temp/
 # Build outputs
 build/
 dist/
+
+# Markdown docs are local-only reference (handoff notes, todo, planning) —
+# keep only the root README.md tracked in git.
+*.md
+!/README.md
