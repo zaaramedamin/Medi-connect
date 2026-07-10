@@ -3,15 +3,24 @@ import { useQuery } from '@tanstack/react-query';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getDoctorSlots } from '@/services/api';
+import { useI18n } from '@/i18n';
 import { cn, formatTime } from '@/lib/utils';
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, getDay, isBefore, startOfDay } from 'date-fns';
+import { fr } from 'date-fns/locale';
 
 interface Props {
   doctorId: string;
   onSelectSlot: (slot: string) => void;
 }
 
+const WEEKDAYS = {
+  en: ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'],
+  fr: ['Di', 'Lu', 'Ma', 'Me', 'Je', 'Ve', 'Sa'],
+};
+
 export function BookingCalendar({ doctorId, onSelectSlot }: Props) {
+  const { t, lang } = useI18n();
+  const locale = lang === 'fr' ? fr : undefined;
   const today = new Date();
   const [month, setMonth] = useState(today);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
@@ -35,19 +44,19 @@ export function BookingCalendar({ doctorId, onSelectSlot }: Props) {
     <div className="space-y-6">
       {/* Month navigation */}
       <div className="flex items-center justify-between">
-        <Button variant="ghost" size="icon" onClick={() => setMonth(m => subMonths(m, 1))} aria-label="Previous month">
+        <Button variant="ghost" size="icon" onClick={() => setMonth(m => subMonths(m, 1))} aria-label={t('Previous month')}>
           <ChevronLeft className="h-4 w-4" />
         </Button>
-        <span className="font-medium">{format(month, 'MMMM yyyy')}</span>
-        <Button variant="ghost" size="icon" onClick={() => setMonth(m => addMonths(m, 1))} aria-label="Next month">
+        <span className="font-medium capitalize">{format(month, 'MMMM yyyy', { locale })}</span>
+        <Button variant="ghost" size="icon" onClick={() => setMonth(m => addMonths(m, 1))} aria-label={t('Next month')}>
           <ChevronRight className="h-4 w-4" />
         </Button>
       </div>
 
       {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1">
-        {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(d => (
-          <div key={d} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
+        {(lang === 'fr' ? WEEKDAYS.fr : WEEKDAYS.en).map((d, i) => (
+          <div key={i} className="text-center text-xs font-medium text-muted-foreground py-1">{d}</div>
         ))}
         {Array(startPad).fill(null).map((_, i) => <div key={`pad-${i}`} />)}
         {days.map(day => {
@@ -65,7 +74,7 @@ export function BookingCalendar({ doctorId, onSelectSlot }: Props) {
                 !isPast && 'hover:bg-primary/10',
                 isSelected && 'bg-primary text-primary-foreground hover:bg-primary/90 font-semibold',
               )}
-              aria-label={format(day, 'MMMM d, yyyy')}
+              aria-label={format(day, 'PPP', { locale })}
               aria-pressed={!!isSelected}
             >
               {format(day, 'd')}
@@ -75,15 +84,15 @@ export function BookingCalendar({ doctorId, onSelectSlot }: Props) {
       </div>
 
       {/* Time slots */}
-      {selectedDate && (
+      {selectedDate ? (
         <div>
-          <p className="text-sm font-medium mb-3">Available slots — {format(selectedDate, 'EEEE, MMMM d')}</p>
+          <p className="text-sm font-medium mb-3 capitalize">{t('Available times')} — {format(selectedDate, 'EEEE, MMMM d', { locale })}</p>
           {slotsLoading ? (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {[...Array(8)].map((_, i) => <div key={i} className="h-9 rounded-md bg-muted animate-pulse" />)}
             </div>
           ) : !slots?.length ? (
-            <p className="text-sm text-muted-foreground">No available slots for this day.</p>
+            <p className="text-sm text-muted-foreground">{t('No available times for this day.')}</p>
           ) : (
             <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
               {slots.map(slot => (
@@ -105,6 +114,8 @@ export function BookingCalendar({ doctorId, onSelectSlot }: Props) {
             </div>
           )}
         </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">{t('Select a date to see available times')}</p>
       )}
     </div>
   );

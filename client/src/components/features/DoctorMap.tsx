@@ -4,6 +4,7 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Link } from 'react-router-dom';
 import { StarRating } from '@/components/ui/star-rating';
+import { useI18n } from '@/i18n';
 import { cn } from '@/lib/utils';
 import type { Doctor } from '@/types';
 
@@ -45,6 +46,7 @@ interface DoctorMapProps {
 }
 
 export function DoctorMap({ doctors, userLocation, className }: DoctorMapProps) {
+  const { t } = useI18n();
   const located = useMemo(
     () => doctors.filter(d => d.lat != null && d.lng != null),
     [doctors]
@@ -77,9 +79,9 @@ export function DoctorMap({ doctors, userLocation, className }: DoctorMapProps) 
                 <p className="font-semibold text-sm">{d.name}</p>
                 {d.specialty && <p className="text-xs text-muted-foreground">{d.specialty}</p>}
                 <div className="my-1"><StarRating value={d.avg_rating ?? 0} count={d.review_count} size={12} /></div>
-                {d.cost != null && <p className="text-xs">{d.cost} DT / visit</p>}
+                {d.cost != null && <p className="text-xs">{d.cost} {t('DT / visit')}</p>}
                 <Link to={`/doctor/${d.id}`} className="text-primary text-xs font-semibold hover:underline">
-                  View profile &amp; book →
+                  {t('View profile & book')} →
                 </Link>
               </div>
             </Popup>
@@ -88,7 +90,7 @@ export function DoctorMap({ doctors, userLocation, className }: DoctorMapProps) 
 
         {userLocation && (
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userIcon}>
-            <Popup>You are here</Popup>
+            <Popup>{t('You are here')}</Popup>
           </Marker>
         )}
       </MapContainer>

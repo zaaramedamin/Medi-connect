@@ -69,7 +69,7 @@ export default function Settings() {
       setSession(data.session);
       toast.success(t('Profile updated.'));
     } catch (e) {
-      toast.error((e as Error).message || 'Failed to update profile');
+      toast.error((e as Error).message || t('Failed to update profile'));
     } finally {
       setSavingProfile(false);
     }
@@ -83,7 +83,7 @@ export default function Settings() {
       password.reset();
       toast.success(t('Password changed.'));
     } catch (e) {
-      toast.error((e as Error).message || 'Failed to change password');
+      toast.error((e as Error).message || t('Failed to change password'));
     } finally {
       setSavingPassword(false);
     }
@@ -106,9 +106,9 @@ export default function Settings() {
             <form onSubmit={profile.handleSubmit(saveProfile)} className="space-y-4" noValidate>
               <div className="space-y-1">
                 <label htmlFor="name" className="text-sm font-medium">{t('Full name')}</label>
-                <Input id="name" {...profile.register('name')} placeholder="Your name" />
+                <Input id="name" {...profile.register('name')} placeholder={t('Your name')} />
                 {profile.formState.errors.name && (
-                  <p className="text-xs text-destructive">{profile.formState.errors.name.message}</p>
+                  <p className="text-xs text-destructive">{t(profile.formState.errors.name.message ?? '')}</p>
                 )}
               </div>
               <div className="space-y-1">
@@ -139,14 +139,14 @@ export default function Settings() {
                   <label htmlFor="new-password" className="text-sm font-medium">{t('New password')}</label>
                   <Input id="new-password" type="password" autoComplete="new-password" {...password.register('password')} />
                   {password.formState.errors.password && (
-                    <p className="text-xs text-destructive">{password.formState.errors.password.message}</p>
+                    <p className="text-xs text-destructive">{t(password.formState.errors.password.message ?? '')}</p>
                   )}
                 </div>
                 <div className="space-y-1">
                   <label htmlFor="confirm-password" className="text-sm font-medium">{t('Confirm')}</label>
                   <Input id="confirm-password" type="password" autoComplete="new-password" {...password.register('confirm')} />
                   {password.formState.errors.confirm && (
-                    <p className="text-xs text-destructive">{password.formState.errors.confirm.message}</p>
+                    <p className="text-xs text-destructive">{t(password.formState.errors.confirm.message ?? '')}</p>
                   )}
                 </div>
               </div>
@@ -192,7 +192,7 @@ function ProfileDetailsCard() {
       queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
       toast.success(t('Details saved.'));
     },
-    onError: (e: Error) => toast.error(e.message || 'Failed to save details'),
+    onError: (e: Error) => toast.error(e.message || t('Failed to save details')),
   });
 
   return (
@@ -223,9 +223,9 @@ function ProfileDetailsCard() {
               </select>
             </Labeled>
             <Labeled label={t('City')}><Input {...register('city')} placeholder="Tunis" /></Labeled>
-            <Labeled label={t('Emergency contact')}><Input {...register('emergency_contact')} placeholder="Name · phone" /></Labeled>
+            <Labeled label={t('Emergency contact')}><Input {...register('emergency_contact')} placeholder={t('Name · phone')} /></Labeled>
           </div>
-          <Labeled label={t('Address')}><Input {...register('address')} placeholder="Street, city" /></Labeled>
+          <Labeled label={t('Address')}><Input {...register('address')} placeholder={t('Street, city')} /></Labeled>
           <Labeled label={t('Allergies & notes')}>
             <textarea
               {...register('allergies')}

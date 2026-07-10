@@ -401,6 +401,49 @@ const BASE: Record<string, string> = {
   'Placed': 'Passée',
   'Delivered': 'Livrée',
   'Cancelled': 'Annulée',
+
+  // ── Doctor profile / booking ────────────────────────────────────
+  'Doctor not found.': 'Médecin introuvable.',
+  '/ visit': '/ visite',
+  'Book an appointment': 'Prendre rendez-vous',
+  "This doctor hasn't set their schedule yet.": 'Ce médecin n’a pas encore défini son planning.',
+  'Patient reviews': 'Avis des patients',
+  'No reviews yet — be the first after your visit.':
+    'Aucun avis pour l’instant — soyez le premier après votre visite.',
+  'Confirm appointment': 'Confirmer le rendez-vous',
+  'Review the details before booking': 'Vérifiez les détails avant de réserver',
+  'Payment method': 'Mode de paiement',
+  'Booking...': 'Réservation…',
+  'Confirm booking': 'Confirmer la réservation',
+  'Loading available times…': 'Chargement des horaires…',
+  'No available times for this day.': 'Aucun horaire disponible ce jour.',
+  'Select a date': 'Choisissez une date',
+  'Select a date to see available times': 'Choisissez une date pour voir les créneaux disponibles',
+  'Available times': 'Créneaux disponibles',
+  'Previous month': 'Mois précédent',
+  'Next month': 'Mois suivant',
+
+  // ── Map ─────────────────────────────────────────────────────────
+  'You are here': 'Vous êtes ici',
+
+  // ── Form validation & fallbacks ─────────────────────────────────
+  'Name is required': 'Le nom est requis',
+  'Invalid email': 'E-mail invalide',
+  'Min 8 characters': 'Minimum 8 caractères',
+  'At least 8 characters': 'Au moins 8 caractères',
+  'Passwords do not match': 'Les mots de passe ne correspondent pas',
+  'Failed to update profile': 'Échec de la mise à jour du profil',
+  'Failed to change password': 'Échec du changement de mot de passe',
+  'Failed to save details': 'Échec de l’enregistrement des informations',
+  'Your name': 'Votre nom',
+  'Street, city': 'Rue, ville',
+  'Name · phone': 'Nom · téléphone',
+
+  // ── Admin delete confirmations (with {name}/{title} placeholders) ─
+  'Delete {name}? This cannot be undone.': 'Supprimer {name} ? Cette action est irréversible.',
+  'Delete {name} and their bookings? This cannot be undone.':
+    'Supprimer {name} et ses réservations ? Cette action est irréversible.',
+  'Delete “{title}”? This cannot be undone.': 'Supprimer « {title} » ? Cette action est irréversible.',
 };
 
 export const FR: Record<string, string> = { ...BASE, ...PRODUCTS_FR };

@@ -235,6 +235,7 @@ type NewDoctorParsed = z.output<typeof newDoctorSchema>;
 
 function DoctorsTab() {
   const t = useT();
+  const te = (m?: string) => (m ? t(m) : undefined);
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [editing, setEditing] = useState<AdminDoctor | null>(null);
@@ -318,7 +319,7 @@ function DoctorsTab() {
                     )}
                     <Button
                       variant="ghost" size="icon" className="text-destructive hover:text-destructive"
-                      onClick={() => { if (confirm(`Delete ${doc.name}? This cannot be undone.`)) deleteMutation.mutate(doc.id); }}
+                      onClick={() => { if (confirm(t('Delete {name}? This cannot be undone.').replace('{name}', doc.name))) deleteMutation.mutate(doc.id); }}
                       disabled={deleteMutation.isPending} aria-label={`Delete ${doc.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -340,14 +341,14 @@ function DoctorsTab() {
           </DialogHeader>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-3" noValidate>
             <div className="grid grid-cols-2 gap-3">
-              <Field label={t('Full name')} error={errors.name?.message}><Input {...register('name')} placeholder="Dr. Jane Smith" /></Field>
-              <Field label={t('Specialty')} error={errors.specialty?.message}><Input {...register('specialty')} placeholder="Cardiology" /></Field>
+              <Field label={t('Full name')} error={te(errors.name?.message)}><Input {...register('name')} placeholder="Dr. Jane Smith" /></Field>
+              <Field label={t('Specialty')} error={te(errors.specialty?.message)}><Input {...register('specialty')} placeholder="Cardiology" /></Field>
             </div>
-            <Field label={t('Email')} error={errors.email?.message}><Input type="email" {...register('email')} placeholder="doctor@clinic.tn" /></Field>
-            <Field label={t('Temporary password')} error={errors.password?.message}><Input type="text" {...register('password')} placeholder="Min 8 characters" /></Field>
+            <Field label={t('Email')} error={te(errors.email?.message)}><Input type="email" {...register('email')} placeholder="doctor@clinic.tn" /></Field>
+            <Field label={t('Temporary password')} error={te(errors.password?.message)}><Input type="text" {...register('password')} placeholder={t('Min 8 characters')} /></Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label={t('City')} error={errors.location?.message}><Input {...register('location')} placeholder="Tunis" /></Field>
-              <Field label={t('Cost (DT)')} error={errors.cost?.message}><Input type="number" {...register('cost')} placeholder="60" /></Field>
+              <Field label={t('City')} error={te(errors.location?.message)}><Input {...register('location')} placeholder="Tunis" /></Field>
+              <Field label={t('Cost (DT)')} error={te(errors.cost?.message)}><Input type="number" {...register('cost')} placeholder="60" /></Field>
             </div>
             {formError && <p className="text-sm text-destructive">{formError}</p>}
             <div className="flex gap-2 pt-1">
@@ -378,6 +379,7 @@ type EditDoctorParsed = z.output<typeof editDoctorSchema>;
 
 function EditDoctorDialog({ doctor, onClose, onSaved }: { doctor: AdminDoctor; onClose: () => void; onSaved: () => void }) {
   const t = useT();
+  const te = (m?: string) => (m ? t(m) : undefined);
   const { register, handleSubmit, formState: { errors } } = useForm<EditDoctorForm, unknown, EditDoctorParsed>({
     resolver: zodResolver(editDoctorSchema),
     defaultValues: {
@@ -403,12 +405,12 @@ function EditDoctorDialog({ doctor, onClose, onSaved }: { doctor: AdminDoctor; o
         </DialogHeader>
         <form onSubmit={handleSubmit(data => updateMutation.mutate(data))} className="space-y-3" noValidate>
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t('Full name')} error={errors.name?.message}><Input {...register('name')} /></Field>
-            <Field label={t('Specialty')} error={errors.specialty?.message}><Input {...register('specialty')} /></Field>
+            <Field label={t('Full name')} error={te(errors.name?.message)}><Input {...register('name')} /></Field>
+            <Field label={t('Specialty')} error={te(errors.specialty?.message)}><Input {...register('specialty')} /></Field>
           </div>
           <div className="grid grid-cols-2 gap-3">
-            <Field label={t('City')} error={errors.location?.message}><Input {...register('location')} /></Field>
-            <Field label={t('Cost (DT)')} error={errors.cost?.message}><Input type="number" {...register('cost')} /></Field>
+            <Field label={t('City')} error={te(errors.location?.message)}><Input {...register('location')} /></Field>
+            <Field label={t('Cost (DT)')} error={te(errors.cost?.message)}><Input type="number" {...register('cost')} /></Field>
           </div>
           <div className="flex gap-2 pt-1">
             <Button type="button" variant="outline" className="flex-1" onClick={onClose}>{t('Cancel')}</Button>
@@ -460,7 +462,7 @@ function PatientsTab() {
               </div>
               <Button
                 variant="ghost" size="icon" className="text-destructive hover:text-destructive"
-                onClick={() => { if (confirm(`Delete ${p.name} and their bookings? This cannot be undone.`)) deleteMutation.mutate(p.id); }}
+                onClick={() => { if (confirm(t('Delete {name} and their bookings? This cannot be undone.').replace('{name}', p.name))) deleteMutation.mutate(p.id); }}
                 disabled={deleteMutation.isPending} aria-label={`Delete ${p.name}`}
               >
                 <Trash2 className="h-4 w-4" />
@@ -600,8 +602,8 @@ function PostsTab() {
                   <Badge variant="secondary" className={cn('shrink-0', meta.badge)}>{t(meta.label)}</Badge>
                   <Button
                     variant="ghost" size="icon" className="text-destructive hover:text-destructive"
-                    onClick={() => { if (confirm(`Delete “${a.title}”? This cannot be undone.`)) deleteMutation.mutate(a.id); }}
-                    disabled={deleteMutation.isPending} aria-label={`Delete ${a.title}`}
+                    onClick={() => { if (confirm(t('Delete “{title}”? This cannot be undone.').replace('{title}', a.title))) deleteMutation.mutate(a.id); }}
+                    disabled={deleteMutation.isPending} aria-label={`${t('Delete')} ${a.title}`}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>

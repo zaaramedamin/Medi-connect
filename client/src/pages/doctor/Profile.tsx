@@ -10,12 +10,14 @@ import { StarRating } from '@/components/ui/star-rating';
 import { BookingCalendar } from '@/components/features/BookingCalendar';
 import { getDoctor, getDoctorReviews, bookAppointment } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
+import { useT } from '@/i18n';
 import { formatDate, formatTime } from '@/lib/utils';
 
 export default function DoctorProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
+  const t = useT();
 
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>('cash');
@@ -42,7 +44,7 @@ export default function DoctorProfile() {
   });
 
   if (isLoading) return <div className="container py-16 flex justify-center"><span className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
-  if (!doctor) return <div className="container py-16 text-center text-muted-foreground">Doctor not found.</div>;
+  if (!doctor) return <div className="container py-16 text-center text-muted-foreground">{t('Doctor not found.')}</div>;
 
   const initials = doctor.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
 
@@ -69,7 +71,7 @@ export default function DoctorProfile() {
           <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
             {doctor.location && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{doctor.location}</span>}
             {doctor.avg_consultation_time && <span className="flex items-center gap-1"><Clock className="h-4 w-4" />{doctor.avg_consultation_time} min</span>}
-            {doctor.cost && <span className="flex items-center gap-1"><DollarSign className="h-4 w-4" />{doctor.cost} / visit</span>}
+            {doctor.cost && <span className="flex items-center gap-1"><DollarSign className="h-4 w-4" />{doctor.cost} {t('/ visit')}</span>}
           </div>
           {doctor.description && <p className="mt-3 text-muted-foreground text-sm">{doctor.description}</p>}
         </div>
@@ -79,12 +81,12 @@ export default function DoctorProfile() {
       <div className="rounded-xl border bg-card p-6">
         <h2 className="font-semibold text-lg flex items-center gap-2 mb-4">
           <Calendar className="h-5 w-5 text-primary" />
-          Book an appointment
+          {t('Book an appointment')}
         </h2>
         {doctor.working_hours_start ? (
           <BookingCalendar doctorId={id!} onSelectSlot={handleSlotSelect} />
         ) : (
-          <p className="text-muted-foreground text-sm">This doctor hasn't set their schedule yet.</p>
+          <p className="text-muted-foreground text-sm">{t("This doctor hasn't set their schedule yet.")}</p>
         )}
       </div>
 
@@ -93,7 +95,7 @@ export default function DoctorProfile() {
         <div className="flex items-center justify-between mb-4">
           <h2 className="font-semibold text-lg flex items-center gap-2">
             <MessageSquare className="h-5 w-5 text-primary" />
-            Patient reviews
+            {t('Patient reviews')}
           </h2>
           {doctor.review_count ? (
             <StarRating value={doctor.avg_rating ?? 0} count={doctor.review_count} size={16} />
@@ -118,7 +120,7 @@ export default function DoctorProfile() {
             ))}
           </ul>
         ) : (
-          <p className="text-muted-foreground text-sm">No reviews yet — be the first after your visit.</p>
+          <p className="text-muted-foreground text-sm">{t('No reviews yet — be the first after your visit.')}</p>
         )}
       </div>
 
@@ -126,19 +128,19 @@ export default function DoctorProfile() {
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm appointment</DialogTitle>
-            <DialogDescription>Review the details before booking</DialogDescription>
+            <DialogTitle>{t('Confirm appointment')}</DialogTitle>
+            <DialogDescription>{t('Review the details before booking')}</DialogDescription>
           </DialogHeader>
           {selectedSlot && (
             <div className="space-y-4">
               <div className="rounded-lg border p-4 text-sm space-y-2">
-                <p><span className="font-medium">Doctor:</span> {doctor.name}</p>
-                <p><span className="font-medium">Date:</span> {formatDate(selectedSlot)}</p>
-                <p><span className="font-medium">Time:</span> {formatTime(selectedSlot)}</p>
+                <p><span className="font-medium">{t('Doctor')}:</span> {doctor.name}</p>
+                <p><span className="font-medium">{t('Date')}:</span> {formatDate(selectedSlot)}</p>
+                <p><span className="font-medium">{t('Time')}:</span> {formatTime(selectedSlot)}</p>
               </div>
 
               <div>
-                <p className="text-sm font-medium mb-2">Payment method</p>
+                <p className="text-sm font-medium mb-2">{t('Payment method')}</p>
                 <div className="flex gap-2">
                   {(['cash', 'online'] as const).map(m => (
                     <button
@@ -147,7 +149,7 @@ export default function DoctorProfile() {
                       onClick={() => setPaymentMethod(m)}
                       className={`flex-1 rounded-md border py-2 text-sm capitalize transition-colors ${paymentMethod === m ? 'border-primary bg-primary/5 text-primary font-medium' : 'text-muted-foreground hover:border-primary/50'}`}
                     >
-                      {m}
+                      {t(m)}
                     </button>
                   ))}
                 </div>
@@ -158,9 +160,9 @@ export default function DoctorProfile() {
               )}
 
               <div className="flex gap-2">
-                <Button variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                <Button variant="outline" className="flex-1" onClick={() => setConfirmOpen(false)}>{t('Cancel')}</Button>
                 <Button className="flex-1" onClick={() => bookMutation.mutate()} disabled={bookMutation.isPending}>
-                  {bookMutation.isPending ? 'Booking...' : 'Confirm booking'}
+                  {bookMutation.isPending ? t('Booking...') : t('Confirm booking')}
                 </Button>
               </div>
             </div>
