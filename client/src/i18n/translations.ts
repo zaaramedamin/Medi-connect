@@ -21,6 +21,10 @@ const BASE: Record<string, string> = {
     'Informations générales, pas un diagnostic médical. Consultez un médecin en cas de doute.',
   'Sorry, the assistant is unavailable right now. Please try again in a moment.':
     "Désolé, l'assistant est indisponible pour le moment. Veuillez réessayer dans un instant.",
+  'Search by topic or question…': 'Rechercher par thème ou question…',
+  'No articles match your search.': 'Aucun article ne correspond à votre recherche.',
+  'Try different words, or ask the Health Assistant.':
+    "Essayez d'autres mots, ou demandez à l'assistant santé.",
 
   // ── Header / nav ────────────────────────────────────────────────
   'Find a doctor': 'Trouver un médecin',

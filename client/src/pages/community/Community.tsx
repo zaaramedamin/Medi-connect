@@ -1,6 +1,6 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import { Search, PenSquare, MessagesSquare, X } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -9,31 +9,39 @@ import { AnimatedText } from '@/components/ui/animated-text';
 import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { ArticleCard } from '@/components/features/ArticleCard';
 import { ARTICLE_FILTERS } from '@/data/articleMeta';
-import { getArticles } from '@/services/api';
+import { getArticles, searchArticlesSemantic } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
-import { useT } from '@/i18n';
+import { useI18n } from '@/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
 import { cn } from '@/lib/utils';
 
 export default function Community() {
   const { role } = useAuthStore();
-  const t = useT();
+  const { t, lang } = useI18n();
   const [category, setCategory] = useState<string>('all');
   const [query, setQuery] = useState('');
-  const debounced = useDebounce(query, 250);
+  const debounced = useDebounce(query, 400);
+  const isSearching = debounced.trim().length >= 3;
 
-  const { data: articles, isLoading } = useQuery({
+  // Browse by category, or — once there's a query — rank articles by meaning
+  // via the semantic search endpoint. keepPreviousData avoids a skeleton flash
+  // as the query updates while typing.
+  const browse = useQuery({
     queryKey: ['articles', category],
     queryFn: () => getArticles(category),
+    enabled: !isSearching,
+  });
+  const search = useQuery({
+    queryKey: ['articles-search', debounced, lang],
+    queryFn: () => searchArticlesSemantic(debounced, lang),
+    enabled: isSearching,
+    placeholderData: keepPreviousData,
   });
 
-  const filtered = useMemo(() => {
-    const q = debounced.toLowerCase().trim();
-    if (!q) return articles ?? [];
-    return (articles ?? []).filter(a =>
-      [a.title, a.title_fr, a.excerpt, a.excerpt_fr].some(text => (text ?? '').toLowerCase().includes(q))
-    );
-  }, [articles, debounced]);
+  const isLoading = isSearching ? search.isLoading : browse.isLoading;
+  const results = (isSearching ? search.data : browse.data) ?? [];
+  // Category tabs still narrow the list, in both browse and search modes.
+  const filtered = results.filter(a => category === 'all' || a.category === category);
 
   return (
     <div className="animate-fade-in">
@@ -85,10 +93,10 @@ export default function Community() {
             <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
               className="h-10 rounded-xl pl-10"
-              placeholder={t('Search articles…')}
+              placeholder={t('Search by topic or question…')}
               value={query}
               onChange={e => setQuery(e.target.value)}
-              aria-label="Search articles"
+              aria-label={t('Search by topic or question…')}
             />
             {query && (
               <button
@@ -117,9 +125,15 @@ export default function Community() {
         ) : (
           <div className="py-20 text-center text-muted-foreground">
             <MessagesSquare className="mx-auto mb-4 h-12 w-12 opacity-30" />
-            <p className="text-lg font-medium text-foreground">{t('No articles yet')}</p>
+            <p className="text-lg font-medium text-foreground">
+              {isSearching ? t('No articles match your search.') : t('No articles yet')}
+            </p>
             <p className="mt-1 text-sm">
-              {role === 'doctor' ? t('Be the first to share an insight with your patients.') : t('Check back soon for advice from our doctors.')}
+              {isSearching
+                ? t('Try different words, or ask the Health Assistant.')
+                : role === 'doctor'
+                  ? t('Be the first to share an insight with your patients.')
+                  : t('Check back soon for advice from our doctors.')}
             </p>
           </div>
         )}

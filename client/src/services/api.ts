@@ -134,6 +134,13 @@ export const getArticles = (category?: string) => {
   return apiFetch<Article[]>(`/api/articles${qs}`);
 };
 
+// Semantic search over articles (ranked by meaning, not keywords).
+export const searchArticlesSemantic = (q: string, lang?: 'en' | 'fr') => {
+  const params = new URLSearchParams({ q });
+  if (lang) params.set('lang', lang);
+  return apiFetch<Article[]>(`/api/articles/search?${params.toString()}`);
+};
+
 export const getArticle = (id: string | number) =>
   apiFetch<ArticleDetail>(`/api/articles/${id}`);
 
