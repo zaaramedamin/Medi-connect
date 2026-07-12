@@ -3,7 +3,7 @@ import { body } from 'express-validator';
 import { supabaseAdmin } from '../config/supabase';
 import { requireAuth } from '../middleware/auth';
 import { validate } from '../middleware/validate';
-import { embedQuery } from '../services/embeddings';
+import { embedQuery, reindexArticle } from '../services/embeddings';
 
 const router = Router();
 
@@ -262,6 +262,10 @@ router.post(
       .single();
 
     if (error) return res.status(500).json({ error: 'Failed to publish article' });
+
+    // Index the new article for the assistant + semantic search (fire-and-forget).
+    void reindexArticle(data.id).catch(err => console.error('Article reindex failed:', err));
+
     res.status(201).json(data);
   }
 );

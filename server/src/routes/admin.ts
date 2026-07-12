@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { supabaseAdmin } from '../config/supabase';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validate';
+import { reindexDoctor } from '../services/embeddings';
 
 const router = Router();
 
@@ -71,6 +72,9 @@ router.post(
       return res.status(500).json({ error: 'Failed to create doctor profile' });
     }
 
+    // Index the new doctor for the natural-language finder (fire-and-forget).
+    void reindexDoctor(doctor.id).catch(err => console.error('Doctor reindex failed:', err));
+
     res.status(201).json(doctor);
   }
 );
@@ -108,6 +112,11 @@ router.patch(
       await supabaseAdmin.auth.admin.updateUserById(req.params.id, {
         user_metadata: { name: updates.name },
       });
+    }
+
+    // Re-embed only when the profile fields that feed the finder changed.
+    if ('specialty' in req.body || 'location' in req.body) {
+      void reindexDoctor(req.params.id).catch(err => console.error('Doctor reindex failed:', err));
     }
 
     res.json(data);

@@ -4,7 +4,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { generateTimeSlots, buildAvailableSlots } from '../services/appointmentService';
-import { embedQuery } from '../services/embeddings';
+import { embedQuery, reindexDoctor } from '../services/embeddings';
 
 const router = Router();
 
@@ -233,6 +233,12 @@ router.put(
       .single();
 
     if (error) return res.status(500).json({ error: 'Failed to update profile' });
+
+    // Re-embed when a field that feeds the natural-language finder changed.
+    if (specialty !== undefined || location !== undefined || description !== undefined) {
+      void reindexDoctor(req.user!.id).catch(err => console.error('Doctor reindex failed:', err));
+    }
+
     res.json(data);
   }
 );

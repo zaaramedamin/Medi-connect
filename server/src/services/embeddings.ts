@@ -1,4 +1,4 @@
-import { getHfClient } from './hfClient';
+import { getHfClient, withHfRetry } from './hfClient';
 import { supabaseAdmin } from '../config/supabase';
 
 // The embedding model (see RAG.md Phase 0). Its output dimension (384) is
@@ -17,11 +17,13 @@ const MAX_CHUNK_WORDS = 400;
 // hurts retrieval quality — do not remove the prefixes.
 async function embed(input: string): Promise<number[]> {
   const hf = getHfClient();
-  const output = await hf.featureExtraction({
-    model: EMBEDDING_MODEL,
-    inputs: input,
-    provider: 'hf-inference',
-  });
+  const output = await withHfRetry(() =>
+    hf.featureExtraction({
+      model: EMBEDDING_MODEL,
+      inputs: input,
+      provider: 'hf-inference',
+    })
+  );
   // A single string input yields one flat vector (number[]).
   if (!Array.isArray(output) || typeof output[0] !== 'number') {
     throw new Error('Unexpected embedding shape returned by Hugging Face.');
@@ -145,4 +147,24 @@ export async function ingestDoctor(doctor: IngestableDoctor): Promise<void> {
     .update({ embedding: toVector(embedding) })
     .eq('id', doctor.id);
   if (error) throw new Error(`Storing embedding for doctor ${doctor.id} failed: ${error.message}`);
+}
+
+/** Re-embed a single article by id — called after it's created or edited. */
+export async function reindexArticle(articleId: number): Promise<void> {
+  const { data } = await supabaseAdmin
+    .from('articles')
+    .select('id, title, body, title_fr, body_fr')
+    .eq('id', articleId)
+    .maybeSingle();
+  if (data) await ingestArticle(data as unknown as IngestableArticle);
+}
+
+/** Re-embed a single doctor by id — called after their profile is created or edited. */
+export async function reindexDoctor(doctorId: string): Promise<void> {
+  const { data } = await supabaseAdmin
+    .from('doctors')
+    .select('id, name, specialty, location, description')
+    .eq('id', doctorId)
+    .maybeSingle();
+  if (data) await ingestDoctor(data as unknown as IngestableDoctor);
 }

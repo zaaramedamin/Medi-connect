@@ -1,4 +1,4 @@
-import { getHfClient } from './hfClient';
+import { getHfClient, withHfRetry } from './hfClient';
 import { retrieveChunks, type RetrievedChunk } from './retrieval';
 
 // The generation model (see RAG.md Phase 0). Overridable via env so it can be
@@ -71,12 +71,14 @@ export async function answerQuestion(
   // Guardrail 2: the grounding prompt. The model answers only from context and
   // refuses on its own when the retrieved passages don't address the question.
   const hf = getHfClient();
-  const completion = await hf.chatCompletion({
-    model: CHAT_MODEL,
-    messages: buildMessages(question, chunks),
-    max_tokens: 500,
-    temperature: 0.3, // low — this is factual grounding, not creative writing
-  });
+  const completion = await withHfRetry(() =>
+    hf.chatCompletion({
+      model: CHAT_MODEL,
+      messages: buildMessages(question, chunks),
+      max_tokens: 500,
+      temperature: 0.3, // low — this is factual grounding, not creative writing
+    })
+  );
 
   const answer = completion.choices?.[0]?.message?.content?.trim();
   if (!answer) return { answer: REFUSAL[refusalLang], grounded: false, chunks };
