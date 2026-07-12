@@ -6,6 +6,7 @@ import { Toaster } from 'sonner';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/features/CartDrawer';
+import { HealthAssistant } from '@/components/features/HealthAssistant';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuthInit } from '@/hooks/useAuth';
@@ -76,6 +77,15 @@ function AppRoutes() {
     document.title = match ? `${match} · MediConnect` : 'MediConnect — Find a doctor & book online';
   }, [location.pathname]);
 
+  // Public content pages get the floating AI health assistant; auth,
+  // dashboards, checkout and the article editor do not.
+  const path = location.pathname;
+  const showAssistant =
+    path === '/' ||
+    path === '/shop' ||
+    path === '/why-mediconnect' ||
+    (path.startsWith('/community') && path !== '/community/new');
+
   return (
     <div className="flex min-h-screen flex-col">
       <ScrollProgress />
@@ -130,6 +140,7 @@ function AppRoutes() {
         </AnimatePresence>
       </main>
       <Footer />
+      {showAssistant && <HealthAssistant />}
     </div>
   );
 }

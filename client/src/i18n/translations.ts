@@ -6,6 +6,7 @@ const BASE: Record<string, string> = {
   // ── Health assistant (RAG) ──────────────────────────────────────
   'Open the health assistant': "Ouvrir l'assistant santé",
   'Health Assistant': 'Assistant santé',
+  'AI': 'IA',
   'Answers from articles written by our doctors': 'Réponses tirées des articles rédigés par nos médecins',
   'Ask a health question and I will answer using articles written by our doctors.':
     'Posez une question de santé et je répondrai à partir des articles rédigés par nos médecins.',
