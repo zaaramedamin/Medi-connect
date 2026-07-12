@@ -25,6 +25,17 @@ const BASE: Record<string, string> = {
   'No articles match your search.': 'Aucun article ne correspond à votre recherche.',
   'Try different words, or ask the Health Assistant.':
     "Essayez d'autres mots, ou demandez à l'assistant santé.",
+  'Product advisor': 'Conseiller produits',
+  'Describe what you need and we will suggest products.':
+    'Décrivez votre besoin et nous vous suggérerons des produits.',
+  'Describe what you need…': 'Décrivez ce dont vous avez besoin…',
+  'Ask': 'Demander',
+  'Recommended for you': 'Recommandé pour vous',
+  'The advisor is unavailable right now. Please try again.':
+    'Le conseiller est indisponible pour le moment. Veuillez réessayer.',
+  'Something for a toddler with a fever': 'Quelque chose pour un enfant qui a de la fièvre',
+  'Help with dry, dull skin': 'Pour une peau sèche et terne',
+  'Protect my family from germs': 'Protéger ma famille des microbes',
 
   // ── Header / nav ────────────────────────────────────────────────
   'Find a doctor': 'Trouver un médecin',

@@ -6,6 +6,7 @@ import { AnimatedText } from '@/components/ui/animated-text';
 import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { ProductCard } from '@/components/features/ProductCard';
 import { ProductQuickView } from '@/components/features/ProductQuickView';
+import { ProductAdvisor } from '@/components/features/ProductAdvisor';
 import { PRODUCTS, PRODUCT_CATEGORIES, type Product } from '@/data/products';
 import { useT } from '@/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -67,6 +68,11 @@ export default function Shop() {
             </div>
           </BlurFade>
         </div>
+      </section>
+
+      {/* AI product advisor */}
+      <section className="container pt-8">
+        <ProductAdvisor onQuickView={setQuickView} />
       </section>
 
       {/* Controls */}

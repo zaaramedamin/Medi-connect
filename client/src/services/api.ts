@@ -187,6 +187,19 @@ export const askAssistant = (question: string, lang?: 'en' | 'fr') =>
     body: JSON.stringify({ question, lang }),
   });
 
+export interface ProductAdvice {
+  answer: string;
+  productIds: string[];
+}
+
+// Product advisor — recommends shop products for a described need.
+export const getProductAdvice = (question: string) =>
+  apiFetch<ProductAdvice>('/api/assistant/product-advice', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question }),
+  });
+
 // Photo upload (base64)
 export const uploadPhoto = async (file: File): Promise<{ url: string }> => {
   const base64 = await new Promise<string>((resolve, reject) => {

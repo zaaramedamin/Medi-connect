@@ -4,6 +4,7 @@ import { validate } from '../middleware/validate';
 import { supabaseAdmin } from '../config/supabase';
 import { retrieveChunks, type RetrievedChunk } from '../services/retrieval';
 import { answerQuestion } from '../services/generation';
+import { adviseProducts } from '../services/productAdvisor';
 
 const router = Router();
 
@@ -116,6 +117,22 @@ router.post(
     } catch (err) {
       console.error('assistant/ask error:', err);
       res.status(502).json({ error: 'The assistant is temporarily unavailable.' });
+    }
+  }
+);
+
+// POST /api/assistant/product-advice — recommend shop products for a described
+// need (RAG idea D). Public; rate-limited like the rest of the assistant.
+router.post(
+  '/product-advice',
+  validate([body('question').notEmpty().trim().isLength({ min: 3, max: 400 })]),
+  async (req, res) => {
+    try {
+      const { answer, productIds } = await adviseProducts(req.body.question as string);
+      res.json({ answer, productIds });
+    } catch (err) {
+      console.error('assistant/product-advice error:', err);
+      res.status(502).json({ error: 'The product advisor is temporarily unavailable.' });
     }
   }
 );

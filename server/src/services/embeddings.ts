@@ -168,3 +168,22 @@ export async function reindexDoctor(doctorId: string): Promise<void> {
     .maybeSingle();
   if (data) await ingestDoctor(data as unknown as IngestableDoctor);
 }
+
+export interface IngestableProduct {
+  id: string;
+  name: string;
+  content: string;
+}
+
+// Embed one shop product (name + description + highlights) for the advisor.
+export async function ingestProduct(product: IngestableProduct): Promise<void> {
+  const embedding = await embedPassage(product.content);
+  const { error } = await supabaseAdmin.from('product_embeddings').upsert({
+    id: product.id,
+    name: product.name,
+    content: product.content,
+    embedding: toVector(embedding),
+    updated_at: new Date().toISOString(),
+  });
+  if (error) throw new Error(`Storing embedding for product ${product.id} failed: ${error.message}`);
+}
