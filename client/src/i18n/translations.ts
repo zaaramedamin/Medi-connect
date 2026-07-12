@@ -3,6 +3,24 @@
 import { PRODUCTS_FR } from './productsFr';
 
 const BASE: Record<string, string> = {
+  // ── Health assistant (RAG) ──────────────────────────────────────
+  'Open the health assistant': "Ouvrir l'assistant santé",
+  'Health Assistant': 'Assistant santé',
+  'Answers from articles written by our doctors': 'Réponses tirées des articles rédigés par nos médecins',
+  'Ask a health question and I will answer using articles written by our doctors.':
+    'Posez une question de santé et je répondrai à partir des articles rédigés par nos médecins.',
+  'Try asking': 'Essayez de demander',
+  'How can I sleep better?': 'Comment mieux dormir ?',
+  'What should I do for a fever?': 'Que faire en cas de fièvre ?',
+  'How do I lower my blood pressure?': 'Comment faire baisser ma tension ?',
+  'Sources': 'Sources',
+  'Ask a health question…': 'Posez une question de santé…',
+  'Send': 'Envoyer',
+  'General information, not a medical diagnosis. Book a doctor for anything serious.':
+    'Informations générales, pas un diagnostic médical. Consultez un médecin en cas de doute.',
+  'Sorry, the assistant is unavailable right now. Please try again in a moment.':
+    "Désolé, l'assistant est indisponible pour le moment. Veuillez réessayer dans un instant.",
+
   // ── Header / nav ────────────────────────────────────────────────
   'Find a doctor': 'Trouver un médecin',
   'Shop': 'Boutique',

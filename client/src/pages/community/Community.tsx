@@ -8,6 +8,7 @@ import { BlurFade } from '@/components/ui/blur-fade';
 import { AnimatedText } from '@/components/ui/animated-text';
 import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { ArticleCard } from '@/components/features/ArticleCard';
+import { HealthAssistant } from '@/components/features/HealthAssistant';
 import { ARTICLE_FILTERS } from '@/data/articleMeta';
 import { getArticles } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
@@ -124,6 +125,8 @@ export default function Community() {
           </div>
         )}
       </section>
+
+      <HealthAssistant />
     </div>
   );
 }

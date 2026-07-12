@@ -7,6 +7,12 @@ import { answerQuestion } from '../services/generation';
 
 const router = Router();
 
+// Only cite a source when retrieval was reasonably confident. e5 similarity
+// sits in a narrow high band (relevant matches ~0.87+, off-topic ~0.82), so
+// this bar keeps citations off a soft-refusal answer without gating the answer
+// itself — that's the generation service's grounding prompt's job.
+const CITE_MIN_SIMILARITY = 0.84;
+
 interface ArticleMeta {
   id: number;
   title: string;
@@ -40,7 +46,10 @@ async function distinctSources(chunks: RetrievedChunk[], max = 3) {
     const prev = best.get(c.article_id);
     if (!prev || c.similarity > prev.similarity) best.set(c.article_id, c);
   }
-  const top = [...best.values()].sort((a, b) => b.similarity - a.similarity).slice(0, max);
+  const top = [...best.values()]
+    .filter((c) => c.similarity >= CITE_MIN_SIMILARITY)
+    .sort((a, b) => b.similarity - a.similarity)
+    .slice(0, max);
   const meta = await fetchArticleMeta(top.map((c) => c.article_id));
   return top.map((c) => ({
     article_id: c.article_id,

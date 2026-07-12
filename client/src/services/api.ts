@@ -149,6 +149,32 @@ export const addArticleComment = (articleId: number, body: string) =>
     body: JSON.stringify({ body }),
   });
 
+// AI health assistant (RAG over the doctor articles)
+export interface AssistantSource {
+  article_id: number;
+  title: string;
+  category: string | null;
+  cover_image: string | null;
+  lang: 'en' | 'fr';
+  similarity: number;
+}
+
+export interface AssistantAnswer {
+  question: string;
+  answer: string;
+  grounded: boolean;
+  sources: AssistantSource[];
+}
+
+// Public endpoint — set Content-Type explicitly since anonymous requests carry
+// no auth headers (getAuthHeaders returns {} without a session).
+export const askAssistant = (question: string, lang?: 'en' | 'fr') =>
+  apiFetch<AssistantAnswer>('/api/assistant/ask', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ question, lang }),
+  });
+
 // Photo upload (base64)
 export const uploadPhoto = async (file: File): Promise<{ url: string }> => {
   const base64 = await new Promise<string>((resolve, reject) => {
