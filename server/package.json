@@ -8,18 +8,22 @@
     "dev": "tsx watch src/app.ts",
     "build": "tsc",
     "start": "node dist/app.js",
+    "ingest": "tsx src/scripts/ingest-articles.ts",
     "test": "jest --passWithNoTests",
     "test:coverage": "jest --coverage --passWithNoTests"
   },
   "jest": {
     "preset": "ts-jest",
     "testEnvironment": "node",
-    "testMatch": ["**/__tests__/**/*.test.ts"],
+    "testMatch": [
+      "**/__tests__/**/*.test.ts"
+    ],
     "moduleNameMapper": {
       "^dotenv/config$": "<rootDir>/src/__mocks__/dotenv-config.js"
     }
   },
   "dependencies": {
+    "@huggingface/inference": "^4.13.23",
     "@supabase/supabase-js": "^2.86.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

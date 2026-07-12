@@ -15,3 +15,13 @@ export const apiRateLimit = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+// Tighter limit for the AI assistant: each call hits paid external inference
+// (embedding + generation), so it's rate-limited harder than the rest of the API.
+export const assistantRateLimit = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 15,
+  message: { error: 'You are sending questions too quickly. Please wait a moment.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});

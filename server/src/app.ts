@@ -2,7 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
-import { apiRateLimit } from './middleware/rateLimit';
+import { apiRateLimit, assistantRateLimit } from './middleware/rateLimit';
 import doctorRoutes from './routes/doctors';
 import appointmentRoutes from './routes/appointments';
 import uploadRoutes from './routes/uploads';
@@ -11,6 +11,7 @@ import adminRoutes from './routes/admin';
 import articleRoutes from './routes/articles';
 import orderRoutes from './routes/orders';
 import profileRoutes from './routes/profile';
+import assistantRoutes from './routes/assistant';
 import { processReminders } from './services/reminderService';
 
 const app = express();
@@ -63,6 +64,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/assistant', assistantRateLimit, assistantRoutes);
 
 // Health check
 app.get('/health', (_req, res) => res.json({ status: 'ok' }));
