@@ -36,6 +36,12 @@ const BASE: Record<string, string> = {
   'Something for a toddler with a fever': 'Quelque chose pour un enfant qui a de la fièvre',
   'Help with dry, dull skin': 'Pour une peau sèche et terne',
   'Protect my family from germs': 'Protéger ma famille des microbes',
+  'Our articles': 'Nos articles',
+  'General AI': 'IA générale',
+  'General health information from AI': 'Informations santé générales par IA',
+  'Ask a health question and I will answer from general medical knowledge.':
+    'Posez une question de santé et je répondrai à partir de connaissances médicales générales.',
+  'From general AI knowledge': "D'après les connaissances générales de l'IA",
 
   // ── Header / nav ────────────────────────────────────────────────
   'Find a doctor': 'Trouver un médecin',

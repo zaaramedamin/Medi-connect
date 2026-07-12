@@ -45,9 +45,24 @@ function buildMessages(question: string, chunks: RetrievedChunk[]) {
   ];
 }
 
+export type AssistantMode = 'articles' | 'general';
+
+// General-knowledge mode: no retrieval — the model answers from its own medical
+// knowledge, with the same safety rails as the grounded mode.
+const GENERAL_SYSTEM = [
+  'You are a helpful health information assistant for MediConnect.',
+  "Answer the user's health question clearly and accurately from general medical knowledge.",
+  'Rules:',
+  '- Be concise and easy to understand.',
+  '- Never give a specific diagnosis or prescribe medication or doses.',
+  '- For anything urgent, serious, or personal, tell them to book an appointment with a doctor.',
+  '- Reply in the same language as the question.',
+  '- End with a one-line reminder that this is general information, not a substitute for a consultation.',
+].join('\n');
+
 export interface AnswerResult {
   answer: string;
-  grounded: boolean; // false when we refused without (or before) trusting the model
+  grounded: boolean; // true only when the answer is grounded in retrieved articles
   chunks: RetrievedChunk[]; // the retrieved chunks, so the route can build citations
 }
 
@@ -57,20 +72,43 @@ export interface AnswerResult {
  */
 export async function answerQuestion(
   question: string,
-  opts: { lang?: 'en' | 'fr' | null } = {}
+  opts: { lang?: 'en' | 'fr' | null; mode?: AssistantMode } = {}
 ): Promise<AnswerResult> {
   const lang = opts.lang ?? null;
-  const chunks = await retrieveChunks(question, { lang, limit: CONTEXT_CHUNKS });
+  const mode: AssistantMode = opts.mode ?? 'articles';
   const refusalLang: 'en' | 'fr' = lang ?? 'en';
+  const hf = getHfClient();
 
-  // Guardrail 1: nothing retrieved, or nothing even close — refuse, no LLM call.
-  if (!chunks.length || chunks[0].similarity < MIN_TOP_SIMILARITY) {
+  // General mode: answer from the model's own knowledge, no retrieval, no sources.
+  if (mode === 'general') {
+    const completion = await withHfRetry(() =>
+      hf.chatCompletion({
+        model: CHAT_MODEL,
+        messages: [
+          { role: 'system', content: GENERAL_SYSTEM },
+          { role: 'user', content: question },
+        ],
+        max_tokens: 500,
+        temperature: 0.4,
+      })
+    );
+    const answer = completion.choices?.[0]?.message?.content?.trim() || REFUSAL[refusalLang];
+    return { answer, grounded: false, chunks: [] };
+  }
+
+  // Articles mode: grounded RAG over the doctor articles.
+  const chunks = await retrieveChunks(question, { lang, limit: CONTEXT_CHUNKS });
+
+  // Guardrail 1: nothing relevant retrieved. Check the best cosine across the
+  // pool (hybrid ranking may not put the highest-cosine chunk first) — if even
+  // the closest article is too far, refuse without an LLM call.
+  const topSim = chunks.reduce((max, c) => Math.max(max, c.similarity), 0);
+  if (!chunks.length || topSim < MIN_TOP_SIMILARITY) {
     return { answer: REFUSAL[refusalLang], grounded: false, chunks };
   }
 
   // Guardrail 2: the grounding prompt. The model answers only from context and
   // refuses on its own when the retrieved passages don't address the question.
-  const hf = getHfClient();
   const completion = await withHfRetry(() =>
     hf.chatCompletion({
       model: CHAT_MODEL,

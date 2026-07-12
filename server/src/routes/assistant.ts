@@ -105,12 +105,20 @@ router.post(
   validate([
     body('question').notEmpty().trim().isLength({ min: 3, max: 500 }),
     body('lang').optional({ checkFalsy: true }).isIn(['en', 'fr']),
+    body('mode').optional({ checkFalsy: true }).isIn(['articles', 'general']),
   ]),
   async (req, res) => {
-    const { question, lang } = req.body as { question: string; lang?: 'en' | 'fr' };
+    const { question, lang, mode } = req.body as {
+      question: string;
+      lang?: 'en' | 'fr';
+      mode?: 'articles' | 'general';
+    };
 
     try {
-      const { answer, grounded, chunks } = await answerQuestion(question, { lang: lang ?? null });
+      const { answer, grounded, chunks } = await answerQuestion(question, {
+        lang: lang ?? null,
+        mode: mode ?? 'articles',
+      });
       // Only cite sources when the answer is actually grounded in them.
       const sources = grounded ? await distinctSources(chunks) : [];
       res.json({ question, answer, grounded, sources });

@@ -27,7 +27,10 @@ export async function retrieveChunks(
   const limit = Math.min(Math.max(opts.limit ?? 5, 1), 10);
   const queryEmbedding = await embedQuery(question);
 
-  const { data, error } = await supabaseAdmin.rpc('match_article_chunks', {
+  // Hybrid: fuse full-text keyword ranking with vector similarity (RRF). The
+  // returned `similarity` is still true cosine, so downstream thresholds hold.
+  const { data, error } = await supabaseAdmin.rpc('hybrid_match_article_chunks', {
+    query_text: question,
     // pgvector param wants the "[...]" text form (see toVector note in embeddings.ts)
     query_embedding: JSON.stringify(queryEmbedding),
     match_count: limit,

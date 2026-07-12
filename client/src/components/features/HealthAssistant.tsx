@@ -3,14 +3,16 @@ import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { useMutation } from '@tanstack/react-query';
 import { AnimatePresence, motion } from 'motion/react';
-import { Sparkles, Send, X, Loader2, Stethoscope, ArrowUpRight } from 'lucide-react';
-import { askAssistant, type AssistantSource } from '@/services/api';
+import { Sparkles, Send, X, Loader2, Stethoscope, ArrowUpRight, BookText, Brain } from 'lucide-react';
+import { askAssistant, type AssistantSource, type AssistantMode } from '@/services/api';
 import { useI18n } from '@/i18n';
+import { cn } from '@/lib/utils';
 
 interface Message {
   role: 'user' | 'assistant';
   text: string;
   sources?: AssistantSource[];
+  mode?: AssistantMode;
 }
 
 // Starter prompts (English source strings; translated at render via t()).
@@ -86,14 +88,18 @@ export function HealthAssistant() {
   const { t, lang } = useI18n();
   const [open, setOpen] = useState(false);
   const [input, setInput] = useState('');
+  const [mode, setMode] = useState<AssistantMode>('articles');
   const [messages, setMessages] = useState<Message[]>([]);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   const ask = useMutation({
-    mutationFn: (q: string) => askAssistant(q, lang),
-    onSuccess: (data) =>
-      setMessages((m) => [...m, { role: 'assistant', text: data.answer, sources: data.sources }]),
+    mutationFn: (vars: { q: string; mode: AssistantMode }) => askAssistant(vars.q, lang, vars.mode),
+    onSuccess: (data, vars) =>
+      setMessages((m) => [
+        ...m,
+        { role: 'assistant', text: data.answer, sources: data.sources, mode: vars.mode },
+      ]),
     onError: () =>
       setMessages((m) => [
         ...m,
@@ -117,7 +123,7 @@ export function HealthAssistant() {
     if (question.length < 3 || ask.isPending) return;
     setMessages((m) => [...m, { role: 'user', text: question }]);
     setInput('');
-    ask.mutate(question);
+    ask.mutate({ q: question, mode });
   };
 
   const onSubmit = (e: FormEvent) => {
@@ -178,7 +184,9 @@ export function HealthAssistant() {
                 </p>
                 <p className="mt-0.5 flex items-center gap-1.5 truncate text-xs text-primary-foreground/80">
                   <span className="inline-block h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                  {t('Answers from articles written by our doctors')}
+                  {mode === 'articles'
+                    ? t('Answers from articles written by our doctors')
+                    : t('General health information from AI')}
                 </p>
               </div>
               <button
@@ -190,6 +198,27 @@ export function HealthAssistant() {
               </button>
             </div>
 
+            {/* Mode toggle: grounded in our articles vs. general AI knowledge */}
+            <div className="flex items-center gap-1 border-b bg-muted/40 p-1.5">
+              {(
+                [
+                  ['articles', BookText, t('Our articles')],
+                  ['general', Brain, t('General AI')],
+                ] as const
+              ).map(([m, Icon, label]) => (
+                <button
+                  key={m}
+                  onClick={() => setMode(m)}
+                  className={cn(
+                    'flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-1.5 text-xs font-medium transition-colors',
+                    mode === m ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  <Icon className="h-3.5 w-3.5" /> {label}
+                </button>
+              ))}
+            </div>
+
             {/* Conversation */}
             <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto bg-muted/30 px-4 py-4">
               {/* Opening message + suggestions */}
@@ -198,7 +227,9 @@ export function HealthAssistant() {
                   <div className="flex gap-2.5">
                     <BotAvatar />
                     <div className="max-w-[85%] rounded-2xl rounded-tl-sm border bg-card px-3.5 py-2.5 text-sm leading-relaxed text-foreground shadow-sm">
-                      {t('Ask a health question and I will answer using articles written by our doctors.')}
+                      {mode === 'articles'
+                        ? t('Ask a health question and I will answer using articles written by our doctors.')
+                        : t('Ask a health question and I will answer from general medical knowledge.')}
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 pl-9">
@@ -241,6 +272,11 @@ export function HealthAssistant() {
                       <div className="max-w-[90%] rounded-2xl rounded-tl-sm border bg-card px-3.5 py-2.5 text-sm leading-relaxed text-foreground shadow-sm">
                         <AnswerBody text={m.text} />
                       </div>
+                      {m.mode === 'general' && (
+                        <p className="flex items-center gap-1 text-[10px] font-medium text-muted-foreground">
+                          <Brain className="h-3 w-3" /> {t('From general AI knowledge')}
+                        </p>
+                      )}
                       {m.sources && m.sources.length > 0 && (
                         <div>
                           <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">

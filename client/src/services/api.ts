@@ -178,13 +178,17 @@ export interface AssistantAnswer {
   sources: AssistantSource[];
 }
 
+export type AssistantMode = 'articles' | 'general';
+
 // Public endpoint — set Content-Type explicitly since anonymous requests carry
 // no auth headers (getAuthHeaders returns {} without a session).
-export const askAssistant = (question: string, lang?: 'en' | 'fr') =>
+// mode: 'articles' answers only from MediConnect articles (grounded, cited);
+// 'general' answers from the model's own medical knowledge.
+export const askAssistant = (question: string, lang?: 'en' | 'fr', mode: AssistantMode = 'articles') =>
   apiFetch<AssistantAnswer>('/api/assistant/ask', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ question, lang }),
+    body: JSON.stringify({ question, lang, mode }),
   });
 
 export interface ProductAdvice {

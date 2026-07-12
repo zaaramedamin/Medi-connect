@@ -137,7 +137,8 @@ router.get('/search', async (req, res) => {
   let ranked: { article_id: number; similarity: number }[] = [];
   try {
     const queryEmbedding = await embedQuery(q);
-    const { data, error } = await supabaseAdmin.rpc('match_article_chunks', {
+    const { data, error } = await supabaseAdmin.rpc('hybrid_match_article_chunks', {
+      query_text: q,
       query_embedding: JSON.stringify(queryEmbedding),
       match_count: 15,
       filter_lang: lang,
