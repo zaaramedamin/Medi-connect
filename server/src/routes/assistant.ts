@@ -3,6 +3,7 @@ import { body } from 'express-validator';
 import { validate } from '../middleware/validate';
 import { supabaseAdmin } from '../config/supabase';
 import { retrieveChunks, type RetrievedChunk } from '../services/retrieval';
+import { answerQuestion } from '../services/generation';
 
 const router = Router();
 
@@ -14,37 +15,45 @@ interface ArticleMeta {
   category: string;
 }
 
-// Attach each chunk's source article (language-appropriate title, cover,
-// category) so the frontend can render citations linking to /community/:id.
-async function withArticleInfo(chunks: RetrievedChunk[]) {
-  const ids = [...new Set(chunks.map((c) => c.article_id))];
-  const metaById: Record<number, ArticleMeta> = {};
-  if (ids.length) {
-    const { data } = await supabaseAdmin
-      .from('articles')
-      .select('id, title, title_fr, cover_image, category')
-      .in('id', ids);
-    for (const a of (data ?? []) as ArticleMeta[]) metaById[a.id] = a;
-  }
-
-  return chunks.map((c) => {
-    const a = metaById[c.article_id];
-    const title = a ? (c.lang === 'fr' && a.title_fr ? a.title_fr : a.title) : 'Article';
-    return {
-      article_id: c.article_id,
-      title,
-      category: a?.category ?? null,
-      cover_image: a?.cover_image ?? null,
-      lang: c.lang,
-      similarity: Number(c.similarity.toFixed(4)),
-      content: c.content,
-    };
-  });
+// Fetch article metadata for a set of ids, keyed by id.
+async function fetchArticleMeta(ids: number[]): Promise<Record<number, ArticleMeta>> {
+  const unique = [...new Set(ids)];
+  const byId: Record<number, ArticleMeta> = {};
+  if (!unique.length) return byId;
+  const { data } = await supabaseAdmin
+    .from('articles')
+    .select('id, title, title_fr, cover_image, category')
+    .in('id', unique);
+  for (const a of (data ?? []) as ArticleMeta[]) byId[a.id] = a;
+  return byId;
 }
 
-// POST /api/assistant/search — retrieval only, no LLM. Public (searches the
-// already-public articles). This is the endpoint to test on its own before
-// the generation step is layered on top in Phase 4.
+// Pick the language-appropriate title for a chunk's source article.
+const titleFor = (meta: ArticleMeta | undefined, lang: 'en' | 'fr'): string =>
+  meta ? (lang === 'fr' && meta.title_fr ? meta.title_fr : meta.title) : 'Article';
+
+// Collapse retrieved chunks to distinct source articles (best similarity per
+// article), enriched for display. Used as citations under a generated answer.
+async function distinctSources(chunks: RetrievedChunk[], max = 3) {
+  const best = new Map<number, RetrievedChunk>();
+  for (const c of chunks) {
+    const prev = best.get(c.article_id);
+    if (!prev || c.similarity > prev.similarity) best.set(c.article_id, c);
+  }
+  const top = [...best.values()].sort((a, b) => b.similarity - a.similarity).slice(0, max);
+  const meta = await fetchArticleMeta(top.map((c) => c.article_id));
+  return top.map((c) => ({
+    article_id: c.article_id,
+    title: titleFor(meta[c.article_id], c.lang),
+    category: meta[c.article_id]?.category ?? null,
+    cover_image: meta[c.article_id]?.cover_image ?? null,
+    lang: c.lang,
+    similarity: Number(c.similarity.toFixed(4)),
+  }));
+}
+
+// POST /api/assistant/search — retrieval only, no LLM. Public. Useful for
+// testing retrieval in isolation and for a future semantic-search UI.
 router.post(
   '/search',
   validate([
@@ -61,11 +70,43 @@ router.post(
 
     try {
       const chunks = await retrieveChunks(question, { lang: lang ?? null, limit });
-      const results = await withArticleInfo(chunks);
+      const meta = await fetchArticleMeta(chunks.map((c) => c.article_id));
+      const results = chunks.map((c) => ({
+        article_id: c.article_id,
+        title: titleFor(meta[c.article_id], c.lang),
+        category: meta[c.article_id]?.category ?? null,
+        cover_image: meta[c.article_id]?.cover_image ?? null,
+        lang: c.lang,
+        similarity: Number(c.similarity.toFixed(4)),
+        content: c.content,
+      }));
       res.json({ question, count: results.length, results });
     } catch (err) {
       console.error('assistant/search error:', err);
       res.status(502).json({ error: 'Search is temporarily unavailable.' });
+    }
+  }
+);
+
+// POST /api/assistant/ask — full RAG: retrieve + generate a grounded answer
+// with source citations. Public (answers only from the public articles).
+router.post(
+  '/ask',
+  validate([
+    body('question').notEmpty().trim().isLength({ min: 3, max: 500 }),
+    body('lang').optional({ checkFalsy: true }).isIn(['en', 'fr']),
+  ]),
+  async (req, res) => {
+    const { question, lang } = req.body as { question: string; lang?: 'en' | 'fr' };
+
+    try {
+      const { answer, grounded, chunks } = await answerQuestion(question, { lang: lang ?? null });
+      // Only cite sources when the answer is actually grounded in them.
+      const sources = grounded ? await distinctSources(chunks) : [];
+      res.json({ question, answer, grounded, sources });
+    } catch (err) {
+      console.error('assistant/ask error:', err);
+      res.status(502).json({ error: 'The assistant is temporarily unavailable.' });
     }
   }
 );

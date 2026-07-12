@@ -1,4 +1,4 @@
-import { InferenceClient } from '@huggingface/inference';
+import { getHfClient } from './hfClient';
 import { supabaseAdmin } from '../config/supabase';
 
 // The embedding model (see RAG.md Phase 0). Its output dimension (384) is
@@ -12,25 +12,11 @@ export const EMBEDDING_DIM = 384;
 // surrounding context intact.
 const MAX_CHUNK_WORDS = 400;
 
-let client: InferenceClient | null = null;
-
-function getClient(): InferenceClient {
-  const token = process.env.HF_TOKEN;
-  if (!token || token.includes('xxxx')) {
-    throw new Error(
-      'HF_TOKEN is missing. Create a free "Read" token at ' +
-        'huggingface.co/settings/tokens and add HF_TOKEN=... to server/.env (see RAG.md Phase 0).'
-    );
-  }
-  if (!client) client = new InferenceClient(token);
-  return client;
-}
-
 // E5 models require a task prefix on the input: "passage: " for stored
 // documents and "query: " for the user's question. Skipping it measurably
 // hurts retrieval quality — do not remove the prefixes.
 async function embed(input: string): Promise<number[]> {
-  const hf = getClient();
+  const hf = getHfClient();
   const output = await hf.featureExtraction({
     model: EMBEDDING_MODEL,
     inputs: input,
