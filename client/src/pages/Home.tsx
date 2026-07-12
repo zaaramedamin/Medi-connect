@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 import {
   Search, Star, ShieldCheck, CalendarCheck, BadgeCheck, ArrowRight,
   Stethoscope, HeartPulse, Brain, Baby, Bone, Eye, Smile, Ear,
@@ -19,7 +19,7 @@ import { DoctorMap } from '@/components/features/DoctorMap';
 import { HealthProducts } from '@/components/features/HealthProducts';
 import { TestimonialCarousel } from '@/components/features/TestimonialCarousel';
 import { ArticleCard } from '@/components/features/ArticleCard';
-import { searchDoctors, getArticles } from '@/services/api';
+import { searchDoctors, searchDoctorsSemantic, getArticles } from '@/services/api';
 import { useT } from '@/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
 import { haversineKm, cn } from '@/lib/utils';
@@ -93,11 +93,36 @@ export default function Home() {
     );
   };
 
-  const { data: doctors, isLoading } = useQuery({
+  const isSmart = debouncedQuery.trim().length >= 3;
+
+  // Keyword search (names, exact specialty/city) always runs; the
+  // natural-language finder runs for real phrases and is merged in below.
+  const keyword = useQuery({
     queryKey: ['doctors', 'search', debouncedQuery, specialty, city],
     queryFn: () => searchDoctors(debouncedQuery, { specialty, location: city }),
     enabled: showResults,
   });
+  const semantic = useQuery({
+    queryKey: ['doctors', 'smart', debouncedQuery],
+    queryFn: () => searchDoctorsSemantic(debouncedQuery),
+    enabled: showResults && isSmart,
+    placeholderData: keepPreviousData,
+  });
+
+  const isLoading = keyword.isLoading || (isSmart && semantic.isLoading);
+
+  // Exact keyword matches first, then meaning-based matches not already shown
+  // (respecting the specialty/city dropdowns). Non-smart mode is just keyword
+  // results — the original behavior, unchanged.
+  const doctors = useMemo(() => {
+    const kw = keyword.data ?? [];
+    if (!isSmart) return kw;
+    const seen = new Set(kw.map(d => d.id));
+    let extra = (semantic.data ?? []).filter(d => !seen.has(d.id));
+    if (specialty) extra = extra.filter(d => (d.specialty ?? '').toLowerCase().includes(specialty.toLowerCase()));
+    if (city) extra = extra.filter(d => (d.location ?? '').toLowerCase().includes(city.toLowerCase()));
+    return [...kw, ...extra];
+  }, [keyword.data, semantic.data, isSmart, specialty, city]);
 
   // Default landing list: the highest-rated doctors
   const { data: allDoctors, isLoading: topLoading } = useQuery({

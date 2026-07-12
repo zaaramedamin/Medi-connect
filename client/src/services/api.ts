@@ -41,6 +41,11 @@ export const searchDoctors = (q: string, filters: DoctorSearchFilters = {}) => {
   return apiFetch<Doctor[]>(`/api/doctors/search?${params.toString()}`);
 };
 
+// Natural-language doctor finder — ranks doctors by how well their profile
+// matches a described need, rather than exact keywords.
+export const searchDoctorsSemantic = (q: string) =>
+  apiFetch<Doctor[]>(`/api/doctors/semantic-search?q=${encodeURIComponent(q)}`);
+
 export const getDoctor = (id: string) =>
   apiFetch<Doctor>(`/api/doctors/${id}`);
 

@@ -9,6 +9,7 @@
     "build": "tsc",
     "start": "node dist/app.js",
     "ingest": "tsx src/scripts/ingest-articles.ts",
+    "ingest:doctors": "tsx src/scripts/ingest-doctors.ts",
     "test": "jest --passWithNoTests",
     "test:coverage": "jest --coverage --passWithNoTests"
   },

@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { generateTimeSlots, buildAvailableSlots } from '../services/appointmentService';
+import { embedQuery } from '../services/embeddings';
 
 const router = Router();
 
@@ -69,6 +70,45 @@ router.get('/search', async (req, res) => {
   if (error) return res.status(500).json({ error: 'Failed to search doctors' });
 
   res.json(await attachCoords(await attachRatings(data ?? [])));
+});
+
+// GET /api/doctors/semantic-search?q= — natural-language doctor finder.
+// Ranks active doctors by how well their profile (specialty + city + bio)
+// matches the phrasing, via match_doctors. Registered before "/:id" so the
+// literal "semantic-search" isn't captured as an id.
+router.get('/semantic-search', async (req, res) => {
+  const q = String(req.query.q ?? '').trim();
+  if (q.length < 3) return res.json([]);
+
+  let ranked: { id: string; similarity: number }[] = [];
+  try {
+    const queryEmbedding = await embedQuery(q);
+    const { data, error } = await supabaseAdmin.rpc('match_doctors', {
+      query_embedding: JSON.stringify(queryEmbedding),
+      match_count: 12,
+    });
+    if (error) throw new Error(error.message);
+    ranked = (data ?? []) as { id: string; similarity: number }[];
+  } catch (err) {
+    console.error('doctors/semantic-search error:', err);
+    return res.status(502).json({ error: 'Search is temporarily unavailable' });
+  }
+
+  // Keep reasonably-relevant matches only, in best-match order.
+  const MIN_SIMILARITY = 0.76;
+  const ids = ranked.filter(r => r.similarity >= MIN_SIMILARITY).map(r => r.id);
+  if (!ids.length) return res.json([]);
+
+  const { data, error } = await supabaseAdmin
+    .from('doctors')
+    .select('id, name, specialty, location, description, photos_url, cost, avg_consultation_time')
+    .in('id', ids)
+    .eq('subscription_status', 'active');
+  if (error) return res.status(500).json({ error: 'Failed to search doctors' });
+
+  const byId = new Map((data ?? []).map(d => [d.id, d]));
+  const ordered = ids.map(id => byId.get(id)).filter((d): d is NonNullable<typeof d> => Boolean(d));
+  res.json(await attachCoords(await attachRatings(ordered)));
 });
 
 // GET /api/doctors/:id

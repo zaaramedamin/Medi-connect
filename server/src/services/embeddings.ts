@@ -122,3 +122,27 @@ export async function ingestArticle(article: IngestableArticle): Promise<number>
 
   return rows.length;
 }
+
+export interface IngestableDoctor {
+  id: string;
+  name: string;
+  specialty: string | null;
+  location: string | null;
+  description: string | null;
+}
+
+// Embed a doctor's profile (specialty + city + bio) as one vector, so patients
+// can find them by describing a need in plain language ("skin problems near
+// Tunis") rather than matching exact keywords.
+export async function ingestDoctor(doctor: IngestableDoctor): Promise<void> {
+  const profile = [doctor.specialty, doctor.location, doctor.description]
+    .map((s) => (s ?? '').trim())
+    .filter(Boolean)
+    .join('. ');
+  const embedding = await embedPassage(profile || doctor.name);
+  const { error } = await supabaseAdmin
+    .from('doctors')
+    .update({ embedding: toVector(embedding) })
+    .eq('id', doctor.id);
+  if (error) throw new Error(`Storing embedding for doctor ${doctor.id} failed: ${error.message}`);
+}
