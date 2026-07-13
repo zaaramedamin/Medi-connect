@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { BlurFade } from '@/components/ui/blur-fade';
 import { AnimatedText } from '@/components/ui/animated-text';
 import { NumberTicker } from '@/components/ui/number-ticker';
+import { HeroBackdrop } from '@/components/ui/hero-backdrop';
 import { TestimonialCarousel } from '@/components/features/TestimonialCarousel';
 import { useT } from '@/i18n';
 
@@ -136,12 +137,13 @@ export default function WhyMediConnect() {
         </div>
       </section>
 
-      {/* ── Stats band ───────────────────────────────────────────────── */}
-      <section className="bg-linear-to-br from-primary to-accent">
-        <div className="container grid grid-cols-2 gap-8 py-12 md:grid-cols-4">
+      {/* ── Stats band — real photo instead of a flat brand gradient ─── */}
+      <section className="relative overflow-hidden">
+        <HeroBackdrop image="/backgrounds/why-stats.jpg" />
+        <div className="container relative grid grid-cols-2 gap-8 py-14 md:grid-cols-4">
           {STATS.map(s => (
             <div key={s.label} className="text-center text-white">
-              <p className="font-display text-3xl font-extrabold md:text-4xl">
+              <p className="font-display text-3xl font-extrabold drop-shadow md:text-4xl">
                 <NumberTicker value={s.value} suffix={s.suffix} decimalPlaces={s.decimals} />
               </p>
               <p className="mt-1 text-sm text-white/85">{s.label}</p>
@@ -357,10 +359,11 @@ export default function WhyMediConnect() {
         </div>
       </section>
 
-      {/* ── Final CTA ────────────────────────────────────────────────── */}
+      {/* ── Final CTA — real photo background as an on-brand duotone ─── */}
       <section className="container py-16 md:py-20">
         <BlurFade>
-          <div className="relative overflow-hidden rounded-3xl bg-linear-to-br from-primary to-accent px-6 py-14 text-center md:px-14">
+          <div className="relative overflow-hidden rounded-3xl px-6 py-16 text-center md:px-14 md:py-20">
+            <HeroBackdrop image="/backgrounds/why-cta.jpg" rounded />
             <div aria-hidden className="absolute -top-16 -right-16 h-56 w-56 rounded-full bg-white/10" />
             <div aria-hidden className="absolute -bottom-20 -left-10 h-64 w-64 rounded-full bg-white/10" />
             <h2 className="relative mb-4 text-2xl font-bold text-white md:text-4xl">Ready to feel the difference?</h2>
