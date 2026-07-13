@@ -149,6 +149,137 @@ export interface PatientProfile {
 
 export type PatientProfileInput = Partial<Omit<PatientProfile, 'id' | 'updated_at'>>;
 
+// ── Medical records (doctor-authored, PHI) ───────────────────────────
+export type DocumentType = 'report' | 'prescription' | 'certificate' | 'referral';
+
+export interface Medication {
+  name: string;
+  dose?: string;
+  frequency?: string;
+}
+
+export interface PatientChart {
+  patient_id: string;
+  chronic_conditions: string[];
+  current_medications: Medication[];
+  clinical_allergies: string | null;
+  notes: string | null;
+  updated_by: string | null;
+  updated_at: string;
+}
+
+export type PatientChartInput = {
+  chronic_conditions: string[];
+  current_medications: Medication[];
+  clinical_allergies: string | null;
+  notes: string | null;
+};
+
+export interface Vitals {
+  bp?: string;
+  temperature?: string;
+  weight?: string;
+  heart_rate?: string;
+}
+
+export interface Consultation {
+  id: number;
+  patient_id: string;
+  doctor_id: string;
+  appointment_id: number | null;
+  visit_date: string;
+  reason: string | null;
+  symptoms: string | null;
+  examination: string | null;
+  diagnosis: string | null;
+  plan: string | null;
+  vitals: Vitals | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export type ConsultationInput = Partial<
+  Pick<Consultation, 'reason' | 'symptoms' | 'examination' | 'diagnosis' | 'plan' | 'vitals' | 'appointment_id'>
+>;
+
+/** A doctor's patient list item. */
+export interface DoctorPatient {
+  id: string;
+  name: string;
+  email: string;
+  last_visit: string;
+  visits: number;
+}
+
+/** The demographic identity frozen onto a document / shown in the file header. */
+export interface PatientIdentity {
+  id: string;
+  name: string;
+  email: string;
+  date_of_birth: string | null;
+  gender: 'male' | 'female' | 'other' | null;
+  blood_type: string | null;
+  phone: string | null;
+}
+
+/** Summary row of an issued document (list views). */
+export interface DocumentSummary {
+  id: number;
+  reference: string;
+  type: DocumentType;
+  issued_at: string;
+  revoked_at: string | null;
+  consultation_id?: number | null;
+  doctor_id?: string;
+  doctor_name?: string;
+}
+
+/** The frozen snapshot printed on a document. */
+export interface DocumentContent {
+  reference: string;
+  type: DocumentType;
+  issued_at: string;
+  doctor: {
+    name: string;
+    specialty: string | null;
+    clinic: string | null;
+    address: string | null;
+    phone: string | null;
+    email: string | null;
+  };
+  patient: {
+    name: string;
+    date_of_birth: string | null;
+    gender: string | null;
+  };
+  consultation: {
+    visit_date: string;
+    diagnosis: string | null;
+    reason: string | null;
+  };
+  body: Record<string, unknown>;
+}
+
+export interface MedicalDocument {
+  id: number;
+  reference: string;
+  type: DocumentType;
+  patient_id: string;
+  doctor_id: string;
+  consultation_id: number | null;
+  content: DocumentContent;
+  issued_at: string;
+  revoked_at: string | null;
+  revoked_reason: string | null;
+}
+
+export interface PatientFile {
+  patient: PatientIdentity;
+  chart: PatientChart | null;
+  consultations: Consultation[];
+  documents: DocumentSummary[];
+}
+
 // ── Shop orders (demo checkout — no payment) ─────────────────────────
 export interface OrderItem {
   id: string;

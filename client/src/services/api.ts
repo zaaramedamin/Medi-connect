@@ -5,6 +5,8 @@ import type {
   AdminStats, AdminPatient, Order, OrderItem, AdminOrder,
   PatientProfile, PatientProfileInput,
   RagParam, RagLogRow, RagStats,
+  DoctorPatient, PatientFile, PatientChart, PatientChartInput,
+  Consultation, ConsultationInput, DocumentType, MedicalDocument, DocumentSummary,
 } from '@/types';
 
 // In dev this is empty and Vite proxies /api → localhost. In production set
@@ -135,6 +137,34 @@ export const getMyProfile = () => apiFetch<PatientProfile | null>('/api/profile/
 
 export const updateMyProfile = (updates: PatientProfileInput) =>
   apiFetch<PatientProfile>('/api/profile/me', { method: 'PUT', body: JSON.stringify(updates) });
+
+// Medical records (PHI)
+export const getMyPatients = () =>
+  apiFetch<DoctorPatient[]>('/api/records/patients');
+
+export const getPatientFile = (patientId: string) =>
+  apiFetch<PatientFile>(`/api/records/patients/${patientId}`);
+
+export const savePatientChart = (patientId: string, chart: PatientChartInput) =>
+  apiFetch<PatientChart>(`/api/records/patients/${patientId}/chart`, { method: 'PUT', body: JSON.stringify(chart) });
+
+export const addConsultation = (patientId: string, input: ConsultationInput) =>
+  apiFetch<Consultation>(`/api/records/patients/${patientId}/consultations`, { method: 'POST', body: JSON.stringify(input) });
+
+export const updateConsultation = (id: number, input: ConsultationInput) =>
+  apiFetch<Consultation>(`/api/records/consultations/${id}`, { method: 'PATCH', body: JSON.stringify(input) });
+
+export const issueDocument = (consultationId: number, type: DocumentType, body: Record<string, unknown>) =>
+  apiFetch<MedicalDocument>(`/api/records/consultations/${consultationId}/documents`, { method: 'POST', body: JSON.stringify({ type, body }) });
+
+export const revokeDocument = (id: number, reason?: string) =>
+  apiFetch<DocumentSummary>(`/api/records/documents/${id}/revoke`, { method: 'POST', body: JSON.stringify({ reason }) });
+
+export const getDocument = (id: number) =>
+  apiFetch<MedicalDocument>(`/api/records/documents/${id}`);
+
+export const getMyDocuments = () =>
+  apiFetch<DocumentSummary[]>('/api/records/me/documents');
 
 export const getAdminStats = () => apiFetch<AdminStats>('/api/admin/stats');
 

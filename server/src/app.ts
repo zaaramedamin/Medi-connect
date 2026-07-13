@@ -11,6 +11,7 @@ import adminRoutes from './routes/admin';
 import articleRoutes from './routes/articles';
 import orderRoutes from './routes/orders';
 import profileRoutes from './routes/profile';
+import recordRoutes from './routes/records';
 import assistantRoutes from './routes/assistant';
 import { processReminders } from './services/reminderService';
 
@@ -64,6 +65,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/records', recordRoutes);
 app.use('/api/assistant', assistantRateLimit, assistantRoutes);
 
 // Health check

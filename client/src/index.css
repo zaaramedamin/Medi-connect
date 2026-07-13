@@ -133,3 +133,19 @@ h1, h2, h3, h4 {
   font-family: var(--font-display);
   letter-spacing: -0.02em;
 }
+
+/* ── Print: for issued medical documents. Everything chrome-like hides,
+   and only the .print-sheet remains, laid out for A4. ── */
+@media print {
+  body { background: #fff; }
+  .no-print { display: none !important; }
+  .print-sheet {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    padding: 0;
+    box-shadow: none !important;
+    border: 0 !important;
+  }
+  @page { margin: 18mm 16mm; }
+}

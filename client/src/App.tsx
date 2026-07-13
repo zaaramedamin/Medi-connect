@@ -28,6 +28,8 @@ const WhyMediConnect = lazy(() => import('@/pages/WhyMediConnect'));
 const Community = lazy(() => import('@/pages/community/Community'));
 const CommunityArticle = lazy(() => import('@/pages/community/Article'));
 const NewArticle = lazy(() => import('@/pages/community/NewArticle'));
+const PatientFile = lazy(() => import('@/pages/records/PatientFile'));
+const MedicalDocument = lazy(() => import('@/pages/records/Document'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -63,6 +65,8 @@ const PAGE_TITLES: [string, string][] = [
   ['/why-mediconnect', 'Why MediConnect'],
   ['/settings', 'Account settings'],
   ['/register', 'Create an account'],
+  ['/records/document/', 'Medical document'],
+  ['/records/patient/', 'Patient file'],
   ['/doctor/', 'Doctor profile'],
   ['/login', 'Sign in'],
   ['/admin', 'Admin dashboard'],
@@ -122,6 +126,14 @@ function AppRoutes() {
                 />
                 <Route path="/community/:id" element={<CommunityArticle />} />
                 <Route path="/doctor/:id" element={<DoctorProfile />} />
+                <Route
+                  path="/records/patient/:patientId"
+                  element={<ProtectedRoute role="doctor"><PatientFile /></ProtectedRoute>}
+                />
+                <Route
+                  path="/records/document/:id"
+                  element={<ProtectedRoute role={['doctor', 'patient']}><MedicalDocument /></ProtectedRoute>}
+                />
                 <Route
                   path="/patient/dashboard"
                   element={<ProtectedRoute role="patient"><PatientDashboard /></ProtectedRoute>}

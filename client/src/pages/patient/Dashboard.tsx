@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, MapPin, Clock, Search, Star, Package } from 'lucide-react';
+import { CalendarDays, MapPin, Clock, Search, Star, Package, FileText, FileSignature } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { StarInput } from '@/components/ui/star-rating';
-import { getMyAppointments, cancelAppointment, createReview, getMyOrders } from '@/services/api';
+import { getMyAppointments, cancelAppointment, createReview, getMyOrders, getMyDocuments } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -125,6 +125,9 @@ export default function PatientDashboard() {
         </div>
       )}
 
+      {/* Medical documents */}
+      <MyDocuments />
+
       {/* Shop orders */}
       {orders && orders.length > 0 && (
         <section className="mt-10">
@@ -161,6 +164,43 @@ export default function PatientDashboard() {
         </section>
       )}
     </div>
+  );
+}
+
+function MyDocuments() {
+  const t = useT();
+  const { data: documents } = useQuery({ queryKey: ['records', 'me', 'documents'], queryFn: getMyDocuments });
+  if (!documents || documents.length === 0) return null;
+
+  const label: Record<string, string> = {
+    report: 'Consultation report', prescription: 'Prescription',
+    certificate: 'Medical certificate', referral: 'Referral letter',
+  };
+
+  return (
+    <section className="mt-10">
+      <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
+        <FileText className="h-5 w-5 text-primary" /> {t('My medical documents')}
+      </h2>
+      <Card>
+        <CardContent className="divide-y p-0">
+          {documents.map(d => (
+            <Link key={d.id} to={`/records/document/${d.id}`} className="flex flex-wrap items-center gap-4 p-4 transition-colors hover:bg-muted/30">
+              <FileSignature className="h-5 w-5 shrink-0 text-primary" />
+              <div className="min-w-0 flex-1">
+                <p className="font-semibold">{t(label[d.type] ?? d.type)}</p>
+                <p className="text-sm text-muted-foreground">
+                  {d.reference} · {d.doctor_name ? `${d.doctor_name} · ` : ''}{formatDate(d.issued_at)}
+                </p>
+              </div>
+              {d.revoked_at
+                ? <Badge variant="destructive">{t('Revoked')}</Badge>
+                : <Badge variant="success">{t('Valid')}</Badge>}
+            </Link>
+          ))}
+        </CardContent>
+      </Card>
+    </section>
   );
 }
 

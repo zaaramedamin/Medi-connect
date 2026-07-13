@@ -3,17 +3,17 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useRef, useEffect } from 'react';
-import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2, Building2, Plus, X, Contact } from 'lucide-react';
+import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2, Building2, Plus, X, Contact, FolderOpenDot, FileText, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { getDoctor, getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment } from '@/services/api';
+import { getDoctor, getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment, getMyPatients } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { cn, formatDate, formatTime, initialsOf } from '@/lib/utils';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { Doctor } from '@/types';
@@ -84,7 +84,13 @@ function toFormValues(d: Doctor): ProfileFormInput {
   };
 }
 
-type Tab = 'profile' | 'appointments';
+type Tab = 'profile' | 'appointments' | 'patients';
+
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'profile', label: 'Profile' },
+  { value: 'appointments', label: 'Appointments' },
+  { value: 'patients', label: 'Patients' },
+];
 
 export default function DoctorDashboard() {
   const { user, signOut } = useAuthStore();
@@ -217,17 +223,17 @@ export default function DoctorDashboard() {
 
       {/* Tabs */}
       <div className="flex gap-1 border-b mb-6">
-        {(['profile', 'appointments'] as Tab[]).map(tabKey => (
+        {TABS.map(({ value, label }) => (
           <button
-            key={tabKey}
+            key={value}
             type="button"
-            onClick={() => setTab(tabKey)}
+            onClick={() => setTab(value)}
             className={cn(
               'px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors',
-              tab === tabKey ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
+              tab === value ? 'border-primary text-primary' : 'border-transparent text-muted-foreground hover:text-foreground'
             )}
           >
-            {tabKey === 'appointments' ? `${t('Appointments')} (${appointments?.length ?? 0})` : t('Profile')}
+            {value === 'appointments' ? `${t('Appointments')} (${appointments?.length ?? 0})` : t(label)}
           </button>
         ))}
       </div>
@@ -414,16 +420,23 @@ export default function DoctorDashboard() {
                             {t(apt.status)}
                           </Badge>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          {canComplete && (
-                            <Button
-                              size="sm" variant="outline"
-                              onClick={() => confirmComplete(apt.id, apt.patient_name)}
-                              disabled={completeMutation.isPending}
-                            >
-                              <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t('Mark completed')}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-2">
+                            {canComplete && (
+                              <Button
+                                size="sm" variant="outline"
+                                onClick={() => confirmComplete(apt.id, apt.patient_name)}
+                                disabled={completeMutation.isPending}
+                              >
+                                <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t('Mark completed')}
+                              </Button>
+                            )}
+                            <Button asChild size="sm" variant="ghost">
+                              <Link to={`/records/patient/${apt.user_id}`}>
+                                <FolderOpenDot className="h-4 w-4 mr-1.5" /> {t('Open file')}
+                              </Link>
                             </Button>
-                          )}
+                          </div>
                         </td>
                       </tr>
                     );
@@ -434,6 +447,53 @@ export default function DoctorDashboard() {
           )}
         </div>
       )}
+
+      {tab === 'patients' && <PatientsTab />}
+    </div>
+  );
+}
+
+function PatientsTab() {
+  const t = useT();
+  const { data: patients, isLoading } = useQuery({ queryKey: ['records', 'patients'], queryFn: getMyPatients });
+
+  if (isLoading) {
+    return <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-lg bg-muted animate-pulse" />)}</div>;
+  }
+  if (!patients?.length) {
+    return (
+      <div className="py-16 text-center text-muted-foreground">
+        <FolderOpenDot className="mx-auto mb-4 h-12 w-12 opacity-30" />
+        <p>{t('No patients yet — records appear once a patient books with you.')}</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="mb-3 text-sm text-muted-foreground">
+        {t('The clinical file for each patient you have seen. Only you and the patient can read it.')}
+      </p>
+      {patients.map(p => (
+        <Link
+          key={p.id}
+          to={`/records/patient/${p.id}`}
+          className="flex items-center gap-4 rounded-xl border bg-card p-4 transition-colors hover:border-primary/40"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-secondary text-sm font-bold text-secondary-foreground">
+            {initialsOf(p.name)}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="font-medium">{p.name}</p>
+            <p className="truncate text-xs text-muted-foreground">{p.email}</p>
+          </div>
+          <div className="hidden text-right text-xs text-muted-foreground sm:block">
+            <p className="flex items-center gap-1"><FileText className="h-3.5 w-3.5" />{p.visits} {t(p.visits !== 1 ? 'visits' : 'visit')}</p>
+            <p>{t('Last')}: {formatDate(p.last_visit)}</p>
+          </div>
+          <ChevronRight className="h-5 w-5 shrink-0 text-muted-foreground" />
+        </Link>
+      ))}
     </div>
   );
 }
