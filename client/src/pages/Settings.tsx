@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
-import { UserCog, KeyRound, HeartPulse } from 'lucide-react';
+import { UserCog, KeyRound, HeartPulse, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -12,14 +13,24 @@ import { supabase } from '@/lib/supabase';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { updateDoctorProfile, getMyProfile, updateMyProfile } from '@/services/api';
+import {
+  isProfileComplete, missingProfileFields, REQUIRED_FIELD_LABELS,
+} from '@/lib/patientProfile';
+import type { PatientProfile } from '@/types';
 
 const SELECT_CLASS =
   'h-10 w-full rounded-lg border bg-background px-3 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring';
 const BLOOD_TYPES = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'] as const;
 
+// Phone and date of birth are required — a doctor can't take a booking without
+// a way to reach the patient or their age. See lib/patientProfile.ts. The rest
+// of the form stays optional.
 const profileDetailsSchema = z.object({
-  phone: z.string().max(50).optional(),
-  date_of_birth: z.string().optional(),
+  phone: z.string().trim().min(6, 'Enter a phone number a doctor can reach you on').max(50),
+  date_of_birth: z
+    .string()
+    .min(1, 'Date of birth is required')
+    .refine(d => new Date(d) <= new Date(), { message: 'Date of birth cannot be in the future' }),
   gender: z.enum(['male', 'female', 'other', '']).optional(),
   city: z.string().max(100).optional(),
   address: z.string().max(300).optional(),
@@ -28,6 +39,11 @@ const profileDetailsSchema = z.object({
   emergency_contact: z.string().max(150).optional(),
 });
 type ProfileDetailsForm = z.infer<typeof profileDetailsSchema>;
+
+/** Red asterisk next to a label that must be filled before booking. */
+function Required() {
+  return <span className="ml-0.5 text-destructive" aria-hidden>*</span>;
+}
 
 const profileSchema = z.object({
   name: z.string().min(2, 'Name is required').max(100),
@@ -89,10 +105,37 @@ export default function Settings() {
     }
   };
 
+  const isPatient = role === 'patient';
+
+  // Only patients have one of these rows; a doctor's contact details live on
+  // their public profile, in the doctor dashboard.
+  const { data: patientProfile } = useQuery({
+    queryKey: ['profile', 'me'],
+    queryFn: getMyProfile,
+    enabled: isPatient,
+  });
+
+  const missing = missingProfileFields(patientProfile);
+  const needsDetails = isPatient && missing.length > 0;
+
   return (
     <div className="container max-w-2xl py-8">
       <h1 className="mb-1 text-2xl font-bold">{t('Account settings')}</h1>
       <p className="mb-8 text-muted-foreground">{t('Update your personal details and password.')}</p>
+
+      {needsDetails && (
+        <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/10 p-4">
+          <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+          <div>
+            <p className="text-sm font-semibold">{t('Finish setting up your account')}</p>
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              {t('A doctor cannot take your booking until you add: {fields}.', {
+                fields: missing.map(f => t(REQUIRED_FIELD_LABELS[f])).join(', '),
+              })}
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-6">
         <Card>
@@ -123,7 +166,7 @@ export default function Settings() {
           </CardContent>
         </Card>
 
-        <ProfileDetailsCard />
+        {isPatient && <ProfileDetailsCard profile={patientProfile} />}
 
         <Card>
           <CardHeader>
@@ -161,12 +204,17 @@ export default function Settings() {
   );
 }
 
-function ProfileDetailsCard() {
+function ProfileDetailsCard({ profile }: { profile?: PatientProfile | null }) {
   const t = useT();
+  const navigate = useNavigate();
+  const location = useLocation();
   const queryClient = useQueryClient();
-  const { data: profile } = useQuery({ queryKey: ['profile', 'me'], queryFn: getMyProfile });
 
-  const { register, handleSubmit, reset } = useForm<ProfileDetailsForm>({
+  // Set when the booking flow bounced them here — go back to that doctor as
+  // soon as the profile is good enough to book with.
+  const returnTo = (location.state as { from?: string } | null)?.from;
+
+  const { register, handleSubmit, reset, formState: { errors } } = useForm<ProfileDetailsForm>({
     resolver: zodResolver(profileDetailsSchema),
   });
 
@@ -188,9 +236,13 @@ function ProfileDetailsCard() {
 
   const mutation = useMutation({
     mutationFn: (data: ProfileDetailsForm) => updateMyProfile({ ...data, gender: data.gender || null }),
-    onSuccess: () => {
+    onSuccess: saved => {
       queryClient.invalidateQueries({ queryKey: ['profile', 'me'] });
       toast.success(t('Details saved.'));
+      // If they were sent here mid-booking, put them back on that doctor.
+      if (returnTo && isProfileComplete(saved)) {
+        navigate(returnTo, { replace: true });
+      }
     },
     onError: (e: Error) => toast.error(e.message || t('Failed to save details')),
   });
@@ -201,13 +253,19 @@ function ProfileDetailsCard() {
         <CardTitle className="flex items-center gap-2 text-base">
           <HeartPulse className="h-4 w-4 text-primary" /> {t('Contact & medical details')}
         </CardTitle>
-        <CardDescription>{t('Optional — helps doctors prepare for your visit. Only you can see this.')}</CardDescription>
+        <CardDescription>
+          {t('Phone and date of birth are needed to book. The rest is optional and helps doctors prepare — only you can see it.')}
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(data => mutation.mutate(data))} className="space-y-4" noValidate>
           <div className="grid gap-4 sm:grid-cols-2">
-            <Labeled label={t('Phone')}><Input {...register('phone')} placeholder="+216 …" /></Labeled>
-            <Labeled label={t('Date of birth')}><Input type="date" {...register('date_of_birth')} /></Labeled>
+            <Labeled label={t('Phone')} required error={errors.phone?.message}>
+              <Input {...register('phone')} placeholder="+216 …" />
+            </Labeled>
+            <Labeled label={t('Date of birth')} required error={errors.date_of_birth?.message}>
+              <Input type="date" {...register('date_of_birth')} />
+            </Labeled>
             <Labeled label={t('Gender')}>
               <select className={SELECT_CLASS} {...register('gender')}>
                 <option value="">{t('Prefer not to say')}</option>
@@ -244,11 +302,21 @@ function ProfileDetailsCard() {
   );
 }
 
-function Labeled({ label, children }: { label: string; children: React.ReactNode }) {
+function Labeled({ label, required, error, children }: {
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  const t = useT();
   return (
     <div className="space-y-1">
-      <label className="text-sm font-medium">{label}</label>
+      <label className="text-sm font-medium">
+        {label}
+        {required && <Required />}
+      </label>
       {children}
+      {error && <p className="text-xs text-destructive">{t(error)}</p>}
     </div>
   );
 }

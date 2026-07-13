@@ -14,11 +14,12 @@ import { BlurFade } from '@/components/ui/blur-fade';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { BookingCalendar } from '@/components/features/BookingCalendar';
 import { DoctorLocationMap } from '@/components/features/DoctorLocationMap';
-import { getDoctor, getDoctorReviews, bookAppointment } from '@/services/api';
+import { getDoctor, getDoctorReviews, bookAppointment, getMyProfile } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { toast } from 'sonner';
 import { cn, formatDate, formatTime, initialsOf, splitName } from '@/lib/utils';
+import { isProfileComplete, missingProfileFields, REQUIRED_FIELD_LABELS } from '@/lib/patientProfile';
 import type { Doctor, ClinicPost, Review } from '@/types';
 
 // ── Building blocks ──────────────────────────────────────────────────
@@ -250,7 +251,7 @@ function Hero({ doctor, onBook }: { doctor: Doctor; onBook: () => void }) {
 export default function DoctorProfile() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, role } = useAuthStore();
   const t = useT();
 
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -267,6 +268,15 @@ export default function DoctorProfile() {
     queryKey: ['doctor', id, 'reviews'],
     queryFn: () => getDoctorReviews(id!),
     enabled: !!id,
+  });
+
+  // The booker's own profile, so we can stop them at the slot rather than let
+  // them book without a contact number. Only patients have one of these.
+  const isPatient = role === 'patient';
+  const { data: myProfile, isPending: profilePending } = useQuery({
+    queryKey: ['profile', 'me'],
+    queryFn: getMyProfile,
+    enabled: !!user && isPatient,
   });
 
   const bookMutation = useMutation({
@@ -293,6 +303,27 @@ export default function DoctorProfile() {
 
   const handleSlotSelect = (slot: string) => {
     if (!user) { navigate('/login'); return; }
+
+    if (isPatient) {
+      // Don't judge completeness off an unresolved query — that would bounce a
+      // patient whose profile is perfectly fine straight out of the booking.
+      if (profilePending) {
+        toast.info(t('One moment — checking your details…'));
+        return;
+      }
+
+      // Send them to settings, remembering where they were so we can drop them
+      // straight back on this doctor once they're done.
+      if (!isProfileComplete(myProfile)) {
+        const missing = missingProfileFields(myProfile).map(f => t(REQUIRED_FIELD_LABELS[f]));
+        toast.info(t('Add your details before booking'), {
+          description: t('We still need: {fields}.', { fields: missing.join(', ') }),
+        });
+        navigate('/settings', { state: { from: `/doctor/${id}` } });
+        return;
+      }
+    }
+
     setSelectedSlot(slot);
     setConfirmOpen(true);
   };

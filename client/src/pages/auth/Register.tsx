@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { Link, useNavigate } from 'react-router-dom';
 import { Stethoscope } from 'lucide-react';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
@@ -40,7 +41,11 @@ export default function Register() {
       setServerError(error);
       return;
     }
-    navigate('/patient/dashboard');
+    // Straight to settings rather than the dashboard: a doctor can't take a
+    // booking without a phone number and a date of birth, so collect them now
+    // instead of bouncing the patient out of a booking later.
+    toast.success(t('Account created — just a couple of details to finish.'));
+    navigate('/settings', { replace: true });
   };
 
   return (

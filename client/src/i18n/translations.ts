@@ -485,6 +485,22 @@ const BASE: Record<string, string> = {
     'Supprimer {name} et ses réservations ? Cette action est irréversible.',
   'Delete “{title}”? This cannot be undone.': 'Supprimer « {title} » ? Cette action est irréversible.',
 
+  // ── Completing a patient profile before booking ──────────────────
+  'Account created — just a couple of details to finish.':
+    'Compte créé — encore quelques informations à compléter.',
+  'Finish setting up your account': 'Terminez la configuration de votre compte',
+  'A doctor cannot take your booking until you add: {fields}.':
+    'Un médecin ne peut pas accepter votre réservation tant que vous n’avez pas renseigné : {fields}.',
+  'Add your details before booking': 'Complétez vos informations avant de réserver',
+  'We still need: {fields}.': 'Il nous manque encore : {fields}.',
+  'One moment — checking your details…': 'Un instant — vérification de vos informations…',
+  'Phone and date of birth are needed to book. The rest is optional and helps doctors prepare — only you can see it.':
+    'Le téléphone et la date de naissance sont nécessaires pour réserver. Le reste est facultatif et aide les médecins à préparer la consultation — vous seul pouvez le voir.',
+  'Enter a phone number a doctor can reach you on':
+    'Saisissez un numéro de téléphone auquel un médecin peut vous joindre',
+  'Date of birth is required': 'La date de naissance est obligatoire',
+  'Date of birth cannot be in the future': 'La date de naissance ne peut pas être dans le futur',
+
   // ── Confirmation dialogs ─────────────────────────────────────────
   // 'Confirm' and 'Cancel' are already defined above (booking dialog) — reused.
   'Type {value} to confirm': 'Tapez {value} pour confirmer',
