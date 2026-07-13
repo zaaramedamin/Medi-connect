@@ -38,6 +38,18 @@ function mockUser(role: 'patient' | 'doctor' = 'patient') {
   });
 }
 
+/** A patient whose profile satisfies the booking precondition. */
+function completeProfile() {
+  return {
+    select: jest.fn().mockReturnThis(),
+    eq: jest.fn().mockReturnThis(),
+    maybeSingle: jest.fn().mockResolvedValue({
+      data: { phone: '+21620111000', date_of_birth: '1990-05-14' },
+      error: null,
+    }),
+  };
+}
+
 function chainable(returnValue: unknown) {
   const chain: Record<string, unknown> = {};
   const methods = ['select', 'insert', 'update', 'delete', 'eq', 'gte', 'lte', 'maybeSingle', 'single'];
@@ -85,12 +97,17 @@ describe('POST /api/appointments', () => {
 
   it('returns 409 if slot is already booked', async () => {
     mockUser('patient');
-    const fromMock = {
-      select: jest.fn().mockReturnThis(),
-      eq: jest.fn().mockReturnThis(),
-      maybeSingle: jest.fn().mockResolvedValue({ data: { id: 99 }, error: null }),
-    };
-    mockFrom.mockReturnValue(fromMock);
+    // Booking now checks the patient's profile first, so the mock has to answer
+    // per table — a single stub would be read as an incomplete profile and 400.
+    mockFrom.mockImplementation((table: string) =>
+      table === 'profiles'
+        ? completeProfile()
+        : {
+            select: jest.fn().mockReturnThis(),
+            eq: jest.fn().mockReturnThis(),
+            maybeSingle: jest.fn().mockResolvedValue({ data: { id: 99 }, error: null }),
+          }
+    );
 
     const app = makeApp();
     const res = await request(app)
@@ -98,6 +115,25 @@ describe('POST /api/appointments', () => {
       .set('Authorization', 'Bearer token')
       .send({ doctor_id: 'doc-1', time_slot: '2025-12-01T10:00:00Z', payment_method: 'cash' });
     expect(res.status).toBe(409);
+  });
+
+  it('returns 400 when the patient profile is incomplete', async () => {
+    mockUser('patient');
+    mockFrom.mockImplementation(() => ({
+      select: jest.fn().mockReturnThis(),
+      eq: jest.fn().mockReturnThis(),
+      maybeSingle: jest.fn().mockResolvedValue({ data: null, error: null }), // no profile row
+    }));
+
+    const app = makeApp();
+    const res = await request(app)
+      .post('/api/appointments')
+      .set('Authorization', 'Bearer token')
+      .send({ doctor_id: 'doc-1', time_slot: '2025-12-01T10:00:00Z', payment_method: 'cash' });
+
+    expect(res.status).toBe(400);
+    expect(res.body.code).toBe('PROFILE_INCOMPLETE');
+    expect(res.body.missing).toEqual(['phone', 'date_of_birth']);
   });
 });
 

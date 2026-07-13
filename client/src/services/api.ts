@@ -17,12 +17,32 @@ async function getAuthHeaders(): Promise<HeadersInit> {
   return { Authorization: `Bearer ${session.access_token}`, 'Content-Type': 'application/json' };
 }
 
+/**
+ * An error the API described, rather than a network failure. `code` lets a
+ * caller react to a specific case (e.g. PROFILE_INCOMPLETE) instead of
+ * string-matching the message.
+ */
+export class ApiError extends Error {
+  status: number;
+  code?: string;
+  /** Extra payload the endpoint attached, e.g. which fields are missing. */
+  details?: Record<string, unknown>;
+
+  constructor(message: string, status: number, body: Record<string, unknown> = {}) {
+    super(message);
+    this.name = 'ApiError';
+    this.status = status;
+    this.code = typeof body.code === 'string' ? body.code : undefined;
+    this.details = body;
+  }
+}
+
 async function apiFetch<T>(path: string, options?: RequestInit): Promise<T> {
   const headers = await getAuthHeaders();
   const res = await fetch(`${API_BASE}${path}`, { ...options, headers: { ...headers, ...options?.headers } });
   if (!res.ok) {
     const body = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error(body.error ?? 'Request failed');
+    throw new ApiError(body.error ?? 'Request failed', res.status, body);
   }
   if (res.status === 204) return undefined as T;
   return res.json();

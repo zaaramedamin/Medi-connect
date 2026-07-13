@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { sendAppointmentConfirmation } from '../services/emailService';
+import { missingProfileFields } from '../services/patientProfile';
 
 const router = Router();
 
@@ -21,12 +22,38 @@ router.post(
     const { doctor_id, time_slot, payment_method } = req.body;
     const patientId = req.user!.id;
 
-    // Check the slot is still available (prevent race condition)
+    // A doctor can't work with a booking they can't attach a phone number or an
+    // age to. The client sends the patient to /settings before they get here,
+    // but the API is reachable on its own, so this is where the rule holds.
+    // Checked before the slot lookup: it's the caller's own problem to fix, so
+    // it should win over "someone else took that slot".
+    let missing;
+    try {
+      missing = await missingProfileFields(patientId);
+    } catch {
+      return res.status(500).json({ error: 'Failed to check your profile' });
+    }
+
+    if (missing.length > 0) {
+      return res.status(400).json({
+        error: 'Complete your contact details before booking.',
+        code: 'PROFILE_INCOMPLETE',
+        missing,
+      });
+    }
+
+    // validate().toDate() hands us a Date, and supabase-js interpolates filter
+    // values into the query string — so .eq('time_slot', date) would send
+    // "Wed Jul 08 2026 12:00:00 GMT+0100", which Postgres cannot match against
+    // the stored timestamp. Compare on ISO instead.
+    const slot = new Date(time_slot).toISOString();
+
+    // Check the slot is still available (fast, friendly answer)
     const { data: existing } = await supabaseAdmin
       .from('appointments')
       .select('id')
       .eq('doctor_id', doctor_id)
-      .eq('time_slot', time_slot)
+      .eq('time_slot', slot)
       .eq('status', 'confirmed')
       .maybeSingle();
 
@@ -39,7 +66,7 @@ router.post(
       .insert({
         doctor_id,
         user_id: patientId,
-        time_slot,
+        time_slot: slot,
         payment_method,
         status: 'confirmed',
         payment_status: 'pending',
@@ -47,7 +74,16 @@ router.post(
       .select()
       .single();
 
-    if (error) return res.status(500).json({ error: 'Failed to book appointment' });
+    if (error) {
+      // UNIQUE (doctor_id, time_slot, status) — someone booked this slot between
+      // the check above and this insert. That's the real race, and it's a 409,
+      // not a server fault.
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'This time slot has just been booked. Please choose another.' });
+      }
+      console.error('Booking failed:', error.message);
+      return res.status(500).json({ error: 'Failed to book appointment' });
+    }
 
     // Send confirmation email async (don't block response)
     const [{ data: doctor }, { data: patient }] = await Promise.all([

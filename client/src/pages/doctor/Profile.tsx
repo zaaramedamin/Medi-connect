@@ -14,7 +14,7 @@ import { BlurFade } from '@/components/ui/blur-fade';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { BookingCalendar } from '@/components/features/BookingCalendar';
 import { DoctorLocationMap } from '@/components/features/DoctorLocationMap';
-import { getDoctor, getDoctorReviews, bookAppointment, getMyProfile } from '@/services/api';
+import { getDoctor, getDoctorReviews, bookAppointment, getMyProfile, ApiError } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { toast } from 'sonner';
@@ -287,6 +287,16 @@ export default function DoctorProfile() {
         description: selectedSlot ? `${formatDate(selectedSlot)} · ${formatTime(selectedSlot)}` : undefined,
       });
       navigate('/patient/dashboard');
+    },
+    onError: err => {
+      // The API rejects a booking from an incomplete profile. We normally catch
+      // that at the slot, but the check can go stale — send them to fix it
+      // rather than showing a dead-end error in the dialog.
+      if (err instanceof ApiError && err.code === 'PROFILE_INCOMPLETE') {
+        setConfirmOpen(false);
+        toast.error(t('Add your details before booking'));
+        navigate('/settings', { state: { from: `/doctor/${id}` } });
+      }
     },
   });
 
