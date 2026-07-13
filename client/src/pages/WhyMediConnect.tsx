@@ -137,13 +137,13 @@ export default function WhyMediConnect() {
         </div>
       </section>
 
-      {/* ── Stats band — real photo instead of a flat brand gradient ─── */}
-      <section className="relative overflow-hidden">
-        <HeroBackdrop image="/backgrounds/why-stats.jpg" />
-        <div className="container relative grid grid-cols-2 gap-8 py-14 md:grid-cols-4">
+      {/* ── Stats band. No photo here on purpose: faces sit right behind
+             the numbers and fight them for attention. ─────────────────── */}
+      <section className="bg-linear-to-br from-primary to-accent">
+        <div className="container grid grid-cols-2 gap-8 py-12 md:grid-cols-4">
           {STATS.map(s => (
             <div key={s.label} className="text-center text-white">
-              <p className="font-display text-3xl font-extrabold drop-shadow md:text-4xl">
+              <p className="font-display text-3xl font-extrabold md:text-4xl">
                 <NumberTicker value={s.value} suffix={s.suffix} decimalPlaces={s.decimals} />
               </p>
               <p className="mt-1 text-sm text-white/85">{s.label}</p>
