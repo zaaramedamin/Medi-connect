@@ -14,6 +14,8 @@ import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { cn, formatDate, formatTime, initialsOf } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import type { Doctor } from '@/types';
 
 // A blank year input means "not set", not year zero.
@@ -89,6 +91,7 @@ export default function DoctorDashboard() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const t = useT();
+  const askConfirm = useConfirm();
   const [tab, setTab] = useState<Tab>('profile');
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [photoFile, setPhotoFile] = useState<File | null>(null);
@@ -110,8 +113,23 @@ export default function DoctorDashboard() {
 
   const completeMutation = useMutation({
     mutationFn: completeAppointment,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments', 'doctor'] }),
+    onSuccess: () => {
+      toast.success(t('Appointment marked as completed.'));
+      queryClient.invalidateQueries({ queryKey: ['appointments', 'doctor'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
+
+  // There is no "un-complete", so check before flipping the wrong row.
+  const confirmComplete = async (id: number, patient: string) => {
+    const ok = await askConfirm({
+      title: t('Mark this appointment as completed?'),
+      detail: patient,
+      description: t('The patient will be able to leave a review. This cannot be undone.'),
+      confirmLabel: t('Mark completed'),
+    });
+    if (ok) completeMutation.mutate(id);
+  };
 
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileForm) => {
@@ -137,13 +155,20 @@ export default function DoctorDashboard() {
     onSuccess: () => {
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
+      toast.success(t('Profile saved.'));
       queryClient.invalidateQueries({ queryKey: ['doctor'] });
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: deleteDoctorAccount,
-    onSuccess: async () => { await signOut(); navigate('/'); },
+    onSuccess: async () => {
+      toast.success(t('Your account has been deleted.'));
+      await signOut();
+      navigate('/');
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const { register, handleSubmit, control, reset, formState: { errors, isDirty } } = useForm<ProfileFormInput, unknown, ProfileForm>({
@@ -168,10 +193,17 @@ export default function DoctorDashboard() {
     setPhotoPreview(URL.createObjectURL(file));
   };
 
-  const handleDelete = () => {
-    if (confirm(t('Delete your account permanently? This cannot be undone.'))) {
-      deleteMutation.mutate();
-    }
+  // The single most destructive action in the app — it takes the account, the
+  // profile and every appointment with it. Worth the extra friction of typing.
+  const handleDelete = async () => {
+    const ok = await askConfirm({
+      title: t('Delete your account permanently?'),
+      description: t('Your profile, your schedule and every appointment booked with you are erased. This cannot be undone.'),
+      variant: 'destructive',
+      requireTyped: 'DELETE',
+      confirmLabel: t('Delete my account'),
+    });
+    if (ok) deleteMutation.mutate();
   };
 
   const initials = initialsOf(user?.user_metadata?.name as string | undefined);
@@ -386,7 +418,7 @@ export default function DoctorDashboard() {
                           {canComplete && (
                             <Button
                               size="sm" variant="outline"
-                              onClick={() => completeMutation.mutate(apt.id)}
+                              onClick={() => confirmComplete(apt.id, apt.patient_name)}
                               disabled={completeMutation.isPending}
                             >
                               <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t('Mark completed')}

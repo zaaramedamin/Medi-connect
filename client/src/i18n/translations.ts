@@ -485,6 +485,39 @@ const BASE: Record<string, string> = {
     'Supprimer {name} et ses réservations ? Cette action est irréversible.',
   'Delete “{title}”? This cannot be undone.': 'Supprimer « {title} » ? Cette action est irréversible.',
 
+  // ── Confirmation dialogs ─────────────────────────────────────────
+  // 'Confirm' and 'Cancel' are already defined above (booking dialog) — reused.
+  'Type {value} to confirm': 'Tapez {value} pour confirmer',
+  'Delete {name}?': 'Supprimer {name} ?',
+  'Their profile, availability and bookings are removed for good.':
+    'Son profil, ses disponibilités et ses réservations sont définitivement supprimés.',
+  'Their account and every booking they made are removed for good.':
+    'Son compte et toutes ses réservations sont définitivement supprimés.',
+  'Delete this post?': 'Supprimer cette publication ?',
+  'The article and all of its comments are removed for good.':
+    "L'article et tous ses commentaires sont définitivement supprimés.",
+  'Delete your account permanently?': 'Supprimer définitivement votre compte ?',
+  'Your profile, your schedule and every appointment booked with you are erased. This cannot be undone.':
+    'Votre profil, votre agenda et tous les rendez-vous pris avec vous sont effacés. Cette action est irréversible.',
+  'Delete my account': 'Supprimer mon compte',
+  'Mark this appointment as completed?': 'Marquer ce rendez-vous comme terminé ?',
+  'The patient will be able to leave a review. This cannot be undone.':
+    'Le patient pourra laisser un avis. Cette action est irréversible.',
+  'Cancel this appointment?': 'Annuler ce rendez-vous ?',
+  'The slot is released immediately and someone else may take it.':
+    "Le créneau est libéré immédiatement et quelqu'un d'autre peut le prendre.",
+  'Cancel appointment': 'Annuler le rendez-vous',
+  'Keep it': 'Le conserver',
+
+  // ── Toasts ───────────────────────────────────────────────────────
+  'Profile saved.': 'Profil enregistré.',
+  'Appointment marked as completed.': 'Rendez-vous marqué comme terminé.',
+  'Your account has been deleted.': 'Votre compte a été supprimé.',
+  'Appointment confirmed.': 'Rendez-vous confirmé.',
+  'Comment posted.': 'Commentaire publié.',
+  'Your article is published.': 'Votre article est publié.',
+  'Thanks — your review is published.': 'Merci — votre avis est publié.',
+
   // ── Home: inside a clinic ────────────────────────────────────────
   'Inside MediConnect': 'MediConnect de l’intérieur',
   'Confirmed before you arrive': 'Confirmé avant même votre arrivée',

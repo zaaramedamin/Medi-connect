@@ -12,8 +12,10 @@ import { StarInput } from '@/components/ui/star-rating';
 import { getMyAppointments, cancelAppointment, createReview, getMyOrders } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { formatDT } from '@/data/products';
 import { formatDate, formatTime, initialsOf } from '@/lib/utils';
+import type { Appointment } from '@/types';
 
 const statusVariant: Record<string, 'success' | 'destructive' | 'secondary'> = {
   confirmed: 'success',
@@ -30,6 +32,7 @@ const orderStatusVariant: Record<string, 'success' | 'destructive' | 'secondary'
 export default function PatientDashboard() {
   const { user } = useAuthStore();
   const t = useT();
+  const askConfirm = useConfirm();
   const queryClient = useQueryClient();
 
   const { data: appointments, isLoading } = useQuery({
@@ -50,6 +53,19 @@ export default function PatientDashboard() {
     },
     onError: (e: Error) => toast.error(e.message || t('Could not cancel the appointment')),
   });
+
+  // Cancelling used to fire on the first click and release the slot instantly.
+  const confirmCancel = async (apt: Appointment) => {
+    const ok = await askConfirm({
+      title: t('Cancel this appointment?'),
+      detail: `${apt.doctors?.name ?? ''} · ${formatDate(apt.time_slot)} ${formatTime(apt.time_slot)}`.trim(),
+      description: t('The slot is released immediately and someone else may take it.'),
+      variant: 'destructive',
+      confirmLabel: t('Cancel appointment'),
+      cancelLabel: t('Keep it'),
+    });
+    if (ok) cancelMutation.mutate(apt.id);
+  };
 
   const userName = user?.user_metadata?.name ?? 'Patient';
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
@@ -91,7 +107,7 @@ export default function PatientDashboard() {
                   <AppointmentCard
                     key={apt.id}
                     appointment={apt}
-                    onCancel={() => cancelMutation.mutate(apt.id)}
+                    onCancel={() => confirmCancel(apt)}
                     cancelling={cancelMutation.isPending}
                   />
                 ))}
@@ -167,9 +183,11 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
     mutationFn: () => createReview(doc!.id, rating, comment),
     onSuccess: () => {
       setSubmitted(true);
+      toast.success(t('Thanks — your review is published.'));
       queryClient.invalidateQueries({ queryKey: ['doctor', doc?.id, 'reviews'] });
       setTimeout(() => setReviewOpen(false), 1200);
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   return (

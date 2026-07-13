@@ -10,6 +10,8 @@ import { getArticle, addArticleComment, deleteArticle } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useI18n } from '@/i18n';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export default function Article() {
   const { id } = useParams<{ id: string }>();
@@ -17,6 +19,7 @@ export default function Article() {
   const queryClient = useQueryClient();
   const { user, role } = useAuthStore();
   const { t, lang } = useI18n();
+  const askConfirm = useConfirm();
   const [comment, setComment] = useState('');
 
   const { data: article, isLoading, isError } = useQuery({
@@ -29,17 +32,32 @@ export default function Article() {
     mutationFn: (body: string) => addArticleComment(Number(id), body),
     onSuccess: () => {
       setComment('');
+      toast.success(t('Comment posted.'));
       queryClient.invalidateQueries({ queryKey: ['article', id] });
     },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const deleteMutation = useMutation({
     mutationFn: () => deleteArticle(Number(id)),
     onSuccess: () => {
+      toast.success(t('Post deleted.'));
       queryClient.invalidateQueries({ queryKey: ['articles'] });
       navigate('/community');
     },
+    onError: (e: Error) => toast.error(e.message),
   });
+
+  // This used to fire on a single click, wiping the post and its comments.
+  const confirmDelete = async () => {
+    const ok = await askConfirm({
+      title: t('Delete this post?'),
+      detail: article?.title,
+      description: t('The article and all of its comments are removed for good.'),
+      variant: 'destructive',
+    });
+    if (ok) deleteMutation.mutate();
+  };
 
   if (isLoading) {
     return (
@@ -95,7 +113,7 @@ export default function Article() {
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => deleteMutation.mutate()}
+                  onClick={confirmDelete}
                   disabled={deleteMutation.isPending}
                   className="text-muted-foreground hover:text-destructive"
                 >

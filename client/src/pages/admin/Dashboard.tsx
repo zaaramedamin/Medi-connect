@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import {
   UserPlus, Trash2, ShieldCheck, ShieldOff, Stethoscope, LayoutDashboard,
   Users, Newspaper, Activity, CalendarCheck, Wallet, TrendingUp, Clock, PenSquare,
@@ -237,6 +238,7 @@ type NewDoctorForm = z.input<typeof newDoctorSchema>;
 type NewDoctorParsed = z.output<typeof newDoctorSchema>;
 
 function DoctorsTab() {
+  const askConfirm = useConfirm();
   const t = useT();
   const te = (m?: string) => (m ? t(m) : undefined);
   const queryClient = useQueryClient();
@@ -322,7 +324,14 @@ function DoctorsTab() {
                     )}
                     <Button
                       variant="ghost" size="icon" className="text-destructive hover:text-destructive"
-                      onClick={() => { if (confirm(t('Delete {name}? This cannot be undone.').replace('{name}', doc.name))) deleteMutation.mutate(doc.id); }}
+                      onClick={async () => {
+                        const ok = await askConfirm({
+                          title: t('Delete {name}?', { name: doc.name }),
+                          description: t('Their profile, availability and bookings are removed for good.'),
+                          variant: 'destructive',
+                        });
+                        if (ok) deleteMutation.mutate(doc.id);
+                      }}
                       disabled={deleteMutation.isPending} aria-label={`Delete ${doc.name}`}
                     >
                       <Trash2 className="h-4 w-4" />
@@ -429,6 +438,7 @@ function EditDoctorDialog({ doctor, onClose, onSaved }: { doctor: AdminDoctor; o
 
 // ── Patients management ──────────────────────────────────────────────
 function PatientsTab() {
+  const askConfirm = useConfirm();
   const t = useT();
   const queryClient = useQueryClient();
   const { data: patients, isLoading } = useQuery({ queryKey: ['admin', 'patients'], queryFn: getAdminPatients });
@@ -465,7 +475,14 @@ function PatientsTab() {
               </div>
               <Button
                 variant="ghost" size="icon" className="text-destructive hover:text-destructive"
-                onClick={() => { if (confirm(t('Delete {name} and their bookings? This cannot be undone.').replace('{name}', p.name))) deleteMutation.mutate(p.id); }}
+                onClick={async () => {
+                  const ok = await askConfirm({
+                    title: t('Delete {name}?', { name: p.name }),
+                    description: t('Their account and every booking they made are removed for good.'),
+                    variant: 'destructive',
+                  });
+                  if (ok) deleteMutation.mutate(p.id);
+                }}
                 disabled={deleteMutation.isPending} aria-label={`Delete ${p.name}`}
               >
                 <Trash2 className="h-4 w-4" />
@@ -569,6 +586,7 @@ function SalesTab() {
 
 // ── Posts management ─────────────────────────────────────────────────
 function PostsTab() {
+  const askConfirm = useConfirm();
   const t = useT();
   const queryClient = useQueryClient();
   const { data: articles, isLoading } = useQuery({ queryKey: ['articles', 'all'], queryFn: () => getArticles() });
@@ -605,7 +623,15 @@ function PostsTab() {
                   <Badge variant="secondary" className={cn('shrink-0', meta.badge)}>{t(meta.label)}</Badge>
                   <Button
                     variant="ghost" size="icon" className="text-destructive hover:text-destructive"
-                    onClick={() => { if (confirm(t('Delete “{title}”? This cannot be undone.').replace('{title}', a.title))) deleteMutation.mutate(a.id); }}
+                    onClick={async () => {
+                      const ok = await askConfirm({
+                        title: t('Delete this post?'),
+                        detail: a.title,
+                        description: t('The article and all of its comments are removed for good.'),
+                        variant: 'destructive',
+                      });
+                      if (ok) deleteMutation.mutate(a.id);
+                    }}
                     disabled={deleteMutation.isPending} aria-label={`${t('Delete')} ${a.title}`}
                   >
                     <Trash2 className="h-4 w-4" />

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { BlurFade } from '@/components/ui/blur-fade';
 import { createArticle } from '@/services/api';
 import { useT } from '@/i18n';
+import { toast } from 'sonner';
 import type { ArticleCategory } from '@/types';
 
 const CATEGORY_OPTIONS: { value: ArticleCategory; label: string; hint: string }[] = [
@@ -36,7 +37,11 @@ export default function NewArticle() {
         cover_image: coverImage.trim() || undefined,
         body: body.trim(),
       }),
-    onSuccess: data => navigate(`/community/${data.id}`),
+    onSuccess: data => {
+      toast.success(t('Your article is published.'));
+      navigate(`/community/${data.id}`);
+    },
+    onError: (e: Error) => toast.error(e.message),
   });
 
   const canSubmit = title.trim().length > 3 && body.trim().length > 20;

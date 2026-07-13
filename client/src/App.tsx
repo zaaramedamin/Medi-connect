@@ -8,6 +8,7 @@ import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/features/CartDrawer';
 import { HealthAssistant } from '@/components/features/HealthAssistant';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
+import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuthInit } from '@/hooks/useAuth';
 import { I18nProvider } from '@/i18n';
@@ -149,9 +150,11 @@ export default function App() {
   return (
     <I18nProvider>
       <QueryClientProvider client={queryClient}>
-        <BrowserRouter>
-          <AppRoutes />
-        </BrowserRouter>
+        <ConfirmProvider>
+          <BrowserRouter>
+            <AppRoutes />
+          </BrowserRouter>
+        </ConfirmProvider>
       </QueryClientProvider>
     </I18nProvider>
   );

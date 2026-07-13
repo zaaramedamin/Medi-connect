@@ -17,6 +17,7 @@ import { DoctorLocationMap } from '@/components/features/DoctorLocationMap';
 import { getDoctor, getDoctorReviews, bookAppointment } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
+import { toast } from 'sonner';
 import { cn, formatDate, formatTime, initialsOf, splitName } from '@/lib/utils';
 import type { Doctor, ClinicPost, Review } from '@/types';
 
@@ -272,6 +273,9 @@ export default function DoctorProfile() {
     mutationFn: () => bookAppointment(id!, selectedSlot!, paymentMethod),
     onSuccess: () => {
       setConfirmOpen(false);
+      toast.success(t('Appointment confirmed.'), {
+        description: selectedSlot ? `${formatDate(selectedSlot)} · ${formatTime(selectedSlot)}` : undefined,
+      });
       navigate('/patient/dashboard');
     },
   });

@@ -13,6 +13,7 @@ import {
   getRagStats, runRagCommand,
 } from '@/services/api';
 import type { RagParam, RagLogRow } from '@/types';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
 
 const GROUP_LABELS: Record<RagParam['group'], string> = {
@@ -74,7 +75,25 @@ interface HistoryEntry {
   lines: string[];
 }
 
+/**
+ * Commands that throw away state. The terminal is a power tool, but `reset all`
+ * and `clear logs` are one keystroke away from a typo, so they get a dialog.
+ */
+const DESTRUCTIVE: { match: RegExp; title: string; description: string }[] = [
+  {
+    match: /^reset\s+all$/i,
+    title: 'Reset every parameter to its default?',
+    description: 'All admin overrides are dropped and the assistant goes back to the values baked into the code.',
+  },
+  {
+    match: /^(clear\s+logs|logs\s+clear)$/i,
+    title: 'Delete the entire request log?',
+    description: 'Every logged question, user and latency is erased. This is the audit trail — it cannot be recovered.',
+  },
+];
+
 function TerminalPanel({ onMutated }: { onMutated: () => void }) {
+  const askConfirm = useConfirm();
   const [input, setInput] = useState('');
   const [history, setHistory] = useState<HistoryEntry[]>([
     { command: '', lines: ['MediConnect RAG console. Type "help" for commands.'] },
@@ -100,9 +119,26 @@ function TerminalPanel({ onMutated }: { onMutated: () => void }) {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
   }, [history, run.isPending]);
 
-  const submit = () => {
+  const submit = async () => {
     const command = input.trim();
     if (!command) return;
+
+    const danger = DESTRUCTIVE.find((d) => d.match.test(command));
+    if (danger) {
+      const ok = await askConfirm({
+        title: danger.title,
+        description: danger.description,
+        detail: `rag> ${command}`,
+        variant: 'destructive',
+        confirmLabel: 'Run it',
+      });
+      if (!ok) {
+        setHistory((h) => [...h, { command, lines: ['cancelled.'] }]);
+        setInput('');
+        return;
+      }
+    }
+
     setCmdHistory((c) => [...c, command]);
     setHistIdx(-1);
     setInput('');
@@ -111,7 +147,7 @@ function TerminalPanel({ onMutated }: { onMutated: () => void }) {
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
-      submit();
+      void submit();
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       if (!cmdHistory.length) return;
@@ -210,8 +246,17 @@ function ParamsPanel() {
   );
 }
 
+interface SaveArgs {
+  value: string | number;
+  /** What it was, so the toast can offer an undo. */
+  previous: string | number;
+  /** Whether an override row existed — undo has to reset rather than re-set. */
+  wasOverridden: boolean;
+}
+
 function ParamRow({ param }: { param: RagParam }) {
   const queryClient = useQueryClient();
+  const askConfirm = useConfirm();
   const [draft, setDraft] = useState<string>(String(param.value));
 
   // Keep the local draft in sync when the server value changes (e.g. via terminal).
@@ -224,10 +269,26 @@ function ParamRow({ param }: { param: RagParam }) {
     queryClient.invalidateQueries({ queryKey: ['rag', 'stats'] });
   };
 
+  // Undo has to know whether the value was an override or the code default:
+  // putting the default back as an override is not the same as having none.
+  const undo = async (previous: string | number, wasOverridden: boolean) => {
+    try {
+      if (wasOverridden) await setRagParam(param.key, previous);
+      else await resetRagParam(param.key);
+      toast.success(`${param.label} reverted to ${previous}`);
+      invalidate();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
   const save = useMutation({
-    mutationFn: (value: string | number) => setRagParam(param.key, value),
-    onSuccess: () => {
-      toast.success(`${param.label} updated`);
+    mutationFn: ({ value }: SaveArgs) => setRagParam(param.key, value),
+    onSuccess: (_data, { value, previous, wasOverridden }) => {
+      toast.success(`${param.label} updated`, {
+        description: `${previous}  →  ${value}`,
+        action: { label: 'Undo', onClick: () => void undo(previous, wasOverridden) },
+      });
       invalidate();
     },
     onError: (err: Error) => {
@@ -239,15 +300,45 @@ function ParamRow({ param }: { param: RagParam }) {
   const reset = useMutation({
     mutationFn: () => resetRagParam(param.key),
     onSuccess: () => {
-      toast.success(`${param.label} reset to default`);
+      const previous = param.value;
+      toast.success(`${param.label} reset to default (${param.default})`, {
+        action: { label: 'Undo', onClick: () => void undo(previous, true) },
+      });
       invalidate();
     },
     onError: (err: Error) => toast.error(err.message),
   });
 
-  const commit = (value: string) => {
-    if (value === '' || value === String(param.value)) return;
-    save.mutate(param.type === 'number' ? Number(value) : value);
+  const commit = async (raw: string) => {
+    if (raw === '' || raw === String(param.value)) return;
+    const value = param.type === 'number' ? Number(raw) : raw;
+
+    // A different embedding model almost always means a different vector width,
+    // and the column is VECTOR(384) — get this wrong and retrieval stops
+    // returning anything until the corpus is re-embedded. Never let it through
+    // on a stray keystroke.
+    if (param.key === 'embedding_model') {
+      const ok = await askConfirm({
+        title: 'Swap the embedding model?',
+        detail: `${param.value}  →  ${value}`,
+        description:
+          'Existing articles keep their current vectors, so search keeps using the old model until you re-run "npm run ingest". If the new model does not output 384 dimensions, retrieval will return nothing at all until the column is migrated.',
+        variant: 'destructive',
+        confirmLabel: 'I understand — change it',
+      });
+      if (!ok) { setDraft(String(param.value)); return; }
+    } else if (param.requiresReingest) {
+      const ok = await askConfirm({
+        title: `Change ${param.label}?`,
+        detail: `${param.value}  →  ${value}`,
+        description:
+          'This only applies to content ingested from now on. Everything already in the index keeps its current chunking until you re-run "npm run ingest".',
+        confirmLabel: 'Change it',
+      });
+      if (!ok) { setDraft(String(param.value)); return; }
+    }
+
+    save.mutate({ value, previous: param.value, wasOverridden: param.isOverridden });
   };
 
   return (
@@ -284,8 +375,8 @@ function ParamRow({ param }: { param: RagParam }) {
               step={param.step ?? 1}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              onMouseUp={() => commit(draft)}
-              onKeyUp={() => commit(draft)}
+              onMouseUp={() => void commit(draft)}
+              onKeyUp={() => void commit(draft)}
               className="flex-1 accent-primary"
             />
           )}
@@ -296,15 +387,15 @@ function ParamRow({ param }: { param: RagParam }) {
             step={param.step ?? 1}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => commit(draft)}
-            onKeyDown={(e) => e.key === 'Enter' && commit(draft)}
+            onBlur={() => void commit(draft)}
+            onKeyDown={(e) => { if (e.key === 'Enter') void commit(draft); }}
             className="w-24 rounded-md border bg-background px-2 py-1 text-sm"
           />
         </div>
       ) : param.type === 'enum' && !param.freeText ? (
         <select
           value={draft}
-          onChange={(e) => { setDraft(e.target.value); commit(e.target.value); }}
+          onChange={(e) => { setDraft(e.target.value); void commit(e.target.value); }}
           className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
         >
           {param.options?.map((o) => <option key={o} value={o}>{o}</option>)}
@@ -315,8 +406,8 @@ function ParamRow({ param }: { param: RagParam }) {
             list={param.options ? `opts-${param.key}` : undefined}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            onBlur={() => commit(draft)}
-            onKeyDown={(e) => e.key === 'Enter' && commit(draft)}
+            onBlur={() => void commit(draft)}
+            onKeyDown={(e) => { if (e.key === 'Enter') void commit(draft); }}
             className="w-full rounded-md border bg-background px-2 py-1.5 text-sm"
           />
           {param.options && (
@@ -338,6 +429,7 @@ function ParamRow({ param }: { param: RagParam }) {
 // ── Live logs ────────────────────────────────────────────────────────
 function LogsPanel() {
   const queryClient = useQueryClient();
+  const askConfirm = useConfirm();
   const [limit, setLimit] = useState(50);
   const { data, isLoading } = useQuery({
     queryKey: ['rag', 'logs', limit],
@@ -354,6 +446,20 @@ function LogsPanel() {
     },
     onError: (err: Error) => toast.error(err.message),
   });
+
+  // This is the audit trail: who asked the assistant what, and how it answered.
+  // There is no undo and no backup, so make it deliberate.
+  const confirmClear = async () => {
+    const ok = await askConfirm({
+      title: 'Delete the entire request log?',
+      description:
+        'Every logged question, the user who asked it, the models that ran and the latency are erased. This is the only record of how the assistant has been used — it cannot be recovered.',
+      variant: 'destructive',
+      requireTyped: 'CLEAR',
+      confirmLabel: 'Delete all logs',
+    });
+    if (ok) clear.mutate();
+  };
 
   return (
     <Card>
@@ -375,7 +481,7 @@ function LogsPanel() {
           >
             <RefreshCw className="mr-1 h-3.5 w-3.5" /> Refresh
           </Button>
-          <Button size="sm" variant="outline" onClick={() => clear.mutate()} disabled={clear.isPending}>
+          <Button size="sm" variant="outline" onClick={confirmClear} disabled={clear.isPending}>
             <Trash2 className="mr-1 h-3.5 w-3.5" /> Clear
           </Button>
         </div>
