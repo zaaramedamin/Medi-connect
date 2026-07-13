@@ -485,6 +485,12 @@ const BASE: Record<string, string> = {
     'Supprimer {name} et ses réservations ? Cette action est irréversible.',
   'Delete “{title}”? This cannot be undone.': 'Supprimer « {title} » ? Cette action est irréversible.',
 
+  // ── Home: inside a clinic ────────────────────────────────────────
+  'Inside MediConnect': 'MediConnect de l’intérieur',
+  'Confirmed before you arrive': 'Confirmé avant même votre arrivée',
+  'Pick a slot from your phone and walk in knowing you are expected — no calls, no queue at the desk.':
+    'Choisissez un créneau depuis votre téléphone et présentez-vous en sachant que l’on vous attend — sans appel, sans file d’attente à l’accueil.',
+
   // ── Doctor profile page ──────────────────────────────────────────
   'Verified doctor': 'Médecin vérifié',
   'Call': 'Appeler',

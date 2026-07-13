@@ -24,7 +24,6 @@ import { useT } from '@/i18n';
 import { useDebounce } from '@/hooks/useDebounce';
 import { haversineKm, cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import heroIllustration from '@/assets/hero-illustration.svg';
 
 const SPECIALTIES = [
   { icon: Stethoscope, label: 'General Medicine' },
@@ -234,12 +233,15 @@ export default function Home() {
 
           <BlurFade delay={0.25} className="hidden lg:block">
             <Parallax offset={36}>
-              <img
-                src={heroIllustration}
-                alt="Doctor profile with appointment calendar and instant confirmation"
-                className="w-full max-w-xl mx-auto animate-float"
-                draggable={false}
-              />
+              <div className="relative mx-auto max-w-xl overflow-hidden rounded-3xl border shadow-2xl shadow-primary/10">
+                <img
+                  src="/backgrounds/hero-consultation.jpg"
+                  alt="A doctor showing a scan on a tablet to an elderly patient"
+                  className="w-full object-cover"
+                  draggable={false}
+                />
+                <div aria-hidden className="absolute inset-0 bg-linear-to-t from-black/25 via-transparent to-transparent" />
+              </div>
             </Parallax>
           </BlurFade>
         </div>
@@ -411,6 +413,34 @@ export default function Home() {
                 ))}
               </div>
             </div>
+          </section>
+
+          {/* Inside a clinic — full-bleed panorama. The heading sits above the
+              photo, never on it: the shot is busy edge to edge and text over it
+              would land on someone's face. */}
+          <section className="pt-16">
+            <BlurFade>
+              <div className="container mb-8 max-w-xl text-center">
+                <span className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">
+                  <HeartPulse className="h-3.5 w-3.5" /> {t('Inside MediConnect')}
+                </span>
+                <h2 className="mb-3 text-2xl font-bold md:text-3xl">
+                  <AnimatedText text={t('Confirmed before you arrive')} />
+                </h2>
+                <p className="text-muted-foreground">
+                  {t('Pick a slot from your phone and walk in knowing you are expected — no calls, no queue at the desk.')}
+                </p>
+              </div>
+            </BlurFade>
+            <BlurFade delay={0.1}>
+              <img
+                src="/backgrounds/clinic.jpg"
+                alt="Patients waiting and checking in on their phones in a MediConnect clinic while staff work at the reception desk"
+                className="h-52 w-full object-cover sm:h-64 md:h-80 lg:h-auto"
+                loading="lazy"
+                draggable={false}
+              />
+            </BlurFade>
           </section>
 
           {/* For doctors */}
