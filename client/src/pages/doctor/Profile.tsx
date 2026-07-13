@@ -378,6 +378,7 @@ export default function DoctorProfile() {
                   address={doctor.address}
                   location={doctor.location}
                   name={doctor.name}
+                  photoUrl={doctor.photos_url}
                 />
               </Section>
             </BlurFade>

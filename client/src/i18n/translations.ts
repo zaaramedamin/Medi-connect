@@ -525,6 +525,9 @@ const BASE: Record<string, string> = {
   'Recenter on the practice': 'Recentrer sur le cabinet',
   'Click the map to zoom': 'Cliquez sur la carte pour zoomer',
   'Get directions': 'Itinéraire',
+  // 'Map' is already defined above (home page List/Map toggle) — reused here.
+  'Satellite': 'Satellite',
+  'Expand': 'Agrandir',
   'Location not shared': 'Localisation non communiquée',
   "This doctor hasn't pinned their practice on the map yet.":
     "Ce médecin n'a pas encore placé son cabinet sur la carte.",
