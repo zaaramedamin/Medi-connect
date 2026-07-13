@@ -484,6 +484,73 @@ const BASE: Record<string, string> = {
   'Delete {name} and their bookings? This cannot be undone.':
     'Supprimer {name} et ses réservations ? Cette action est irréversible.',
   'Delete “{title}”? This cannot be undone.': 'Supprimer « {title} » ? Cette action est irréversible.',
+
+  // ── Doctor profile page ──────────────────────────────────────────
+  'Verified doctor': 'Médecin vérifié',
+  'Call': 'Appeler',
+  '{years} yrs experience': "{years} ans d'expérience",
+  'Years of experience': "Années d'expérience",
+  'Average rating': 'Note moyenne',
+  'Per consultation': 'Par consultation',
+  'New': 'Nouveau',
+  'About {name}': 'À propos de {name}',
+  "This doctor hasn't written an introduction yet.": "Ce médecin n'a pas encore rédigé de présentation.",
+  'Practice location': 'Localisation du cabinet',
+  'No contact details shared.': 'Aucune coordonnée communiquée.',
+  'Website': 'Site web',
+  'Languages spoken': 'Langues parlées',
+
+  // ── Clinic posts ─────────────────────────────────────────────────
+  'Clinic posts': 'Postes en clinique',
+  '1 post': '1 poste',
+  '{count} posts': '{count} postes',
+  'Current': 'Actuel',
+  'present': "aujourd'hui",
+  'Practitioner': 'Praticien',
+  'Independent practice': 'Exercice indépendant',
+  '{name} does not currently hold a post at a clinic or hospital.':
+    "{name} n'occupe actuellement aucun poste en clinique ou à l'hôpital.",
+
+  // ── Languages (doctor profile badges) ────────────────────────────
+  'Arabic': 'Arabe',
+  'French': 'Français',
+  'English': 'Anglais',
+  'Italian': 'Italien',
+  'German': 'Allemand',
+  'Spanish': 'Espagnol',
+
+  // ── Practice location map ────────────────────────────────────────
+  'Zoom in': 'Zoomer',
+  'Zoom out': 'Dézoomer',
+  'Recenter on the practice': 'Recentrer sur le cabinet',
+  'Click the map to zoom': 'Cliquez sur la carte pour zoomer',
+  'Get directions': 'Itinéraire',
+  'Location not shared': 'Localisation non communiquée',
+  "This doctor hasn't pinned their practice on the map yet.":
+    "Ce médecin n'a pas encore placé son cabinet sur la carte.",
+  'This doctor has not shared a practice address.':
+    "Ce médecin n'a pas communiqué d'adresse de cabinet.",
+
+  // ── Doctor dashboard: public profile editor ──────────────────────
+  'This is the summary patients read on your public profile.':
+    'Ce résumé est ce que les patients lisent sur votre profil public.',
+  'Public contact details': 'Coordonnées publiques',
+  'Public email': 'E-mail public',
+  'Practice address': 'Adresse du cabinet',
+  'Street, building — shown under the map': 'Rue, immeuble — affiché sous la carte',
+  'Separate with commas.': 'Séparez par des virgules.',
+  'These appear on your public profile. Your login email is never shown.':
+    "Ces informations apparaissent sur votre profil public. Votre e-mail de connexion n'est jamais affiché.",
+  'Positions you hold, or held, at a clinic or hospital. Leave the end year empty for a post you still hold. No posts means your profile shows "Independent practice".':
+    "Les postes que vous occupez, ou avez occupés, en clinique ou à l'hôpital. Laissez l'année de fin vide pour un poste que vous occupez toujours. Sans poste, votre profil affiche « Exercice indépendant ».",
+  'Remove this post': 'Supprimer ce poste',
+  'Clinic or hospital': 'Clinique ou hôpital',
+  'Your role': 'Votre fonction',
+  'Head of Cardiology': 'Chef du service de cardiologie',
+  'From': 'De',
+  'To': 'À',
+  'Present': "Aujourd'hui",
+  'Add a clinic post': 'Ajouter un poste',
 };
 
 export const FR: Record<string, string> = { ...BASE, ...PRODUCTS_FR };

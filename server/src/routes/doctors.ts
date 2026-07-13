@@ -49,6 +49,44 @@ async function attachCoords<T extends DoctorRow>(doctors: T[]): Promise<T[]> {
   }));
 }
 
+// Extended profile columns + clinic posts (seed/doctor-profile.sql). Both are
+// best-effort for the same reason attachCoords is: if that migration hasn't
+// been run, the profile still renders — just without these sections.
+const PROFILE_EXTRAS = 'phone, email, website, address, years_experience, languages';
+
+async function getProfileExtras(doctorId: string): Promise<Record<string, unknown>> {
+  const { data, error } = await supabaseAdmin
+    .from('doctors')
+    .select(PROFILE_EXTRAS)
+    .eq('id', doctorId)
+    .maybeSingle();
+
+  if (error || !data) return {};
+  return data;
+}
+
+export interface ClinicPost {
+  id: number;
+  clinic_name: string;
+  role: string | null;
+  city: string | null;
+  start_year: number | null;
+  end_year: number | null;
+}
+
+async function getClinicPosts(doctorId: string): Promise<ClinicPost[]> {
+  const { data, error } = await supabaseAdmin
+    .from('doctor_clinics')
+    .select('id, clinic_name, role, city, start_year, end_year')
+    .eq('doctor_id', doctorId)
+    // Current posts (no end year) first, then the most recently ended.
+    .order('end_year', { ascending: false, nullsFirst: true })
+    .order('start_year', { ascending: false });
+
+  if (error) return [];
+  return (data ?? []) as ClinicPost[];
+}
+
 // GET /api/doctors/search?q=&specialty=&location=
 router.get('/search', async (req, res) => {
   const { q = '', specialty, location } = req.query as Record<string, string>;
@@ -121,7 +159,7 @@ router.get('/:id', async (req, res) => {
 
   if (error || !data) return res.status(404).json({ error: 'Doctor not found' });
 
-  const [{ data: summary }, coords] = await Promise.all([
+  const [{ data: summary }, coords, extras, clinics] = await Promise.all([
     supabaseAdmin
       .from('doctor_rating_summary')
       .select('avg_rating, review_count')
@@ -132,14 +170,18 @@ router.get('/:id', async (req, res) => {
       .select('lat, lng')
       .eq('id', req.params.id)
       .maybeSingle(),
+    getProfileExtras(req.params.id),
+    getClinicPosts(req.params.id),
   ]);
 
   res.json({
     ...data,
+    ...extras,
     avg_rating: Number(summary?.avg_rating ?? 0),
     review_count: Number(summary?.review_count ?? 0),
     lat: coords.data?.lat ?? null,
     lng: coords.data?.lng ?? null,
+    clinics,
   });
 });
 
@@ -194,36 +236,56 @@ router.get('/:id/slots', async (req, res) => {
   res.json(slots);
 });
 
+// A cleared form field arrives as '' — store it as NULL, not an empty string.
+const blankToNull = (v: unknown) => (typeof v === 'string' && v.trim() === '' ? null : v);
+
+// The text fields below are NOT .escape()d. React escapes every interpolated
+// string on render and nothing here is passed to dangerouslySetInnerHTML, so
+// escaping on the way in would only corrupt what the doctor actually typed —
+// "I'm a cardiologist" would be stored, and shown, as "I&#x27;m a cardiologist".
+
 // PUT /api/doctors/profile — update own profile (doctor only)
 router.put(
   '/profile',
   requireAuth,
   requireRole('doctor'),
   validate([
-    body('name').optional().trim().isLength({ min: 2, max: 100 }).escape(),
-    body('specialty').optional().trim().isLength({ max: 100 }).escape(),
-    body('location').optional().trim().isLength({ max: 200 }).escape(),
-    body('description').optional().trim().isLength({ max: 2000 }).escape(),
+    body('name').optional().trim().isLength({ min: 2, max: 100 }),
+    body('specialty').optional().trim().isLength({ max: 100 }),
+    body('location').optional().trim().isLength({ max: 200 }),
+    body('description').optional().trim().isLength({ max: 2000 }),
     body('cost').optional().isFloat({ min: 0 }),
-    body('phone').optional().trim().isMobilePhone('any'),
+    body('phone').optional({ values: 'falsy' }).trim().isMobilePhone('any'),
     body('working_hours_start').optional().matches(/^\d{2}:\d{2}$/),
     body('working_hours_end').optional().matches(/^\d{2}:\d{2}$/),
     body('avg_consultation_time').optional().isInt({ min: 10, max: 240 }),
+    // Public profile fields (seed/doctor-profile.sql)
+    body('email').optional({ values: 'falsy' }).trim().isEmail(),
+    body('website').optional({ values: 'falsy' }).trim().isURL(),
+    body('address').optional().trim().isLength({ max: 300 }),
+    body('years_experience').optional({ values: 'null' }).isInt({ min: 0, max: 70 }),
+    body('languages').optional().isArray({ max: 10 }),
+    body('languages.*').trim().isLength({ min: 1, max: 40 }),
+    body('clinics').optional().isArray({ max: 20 }),
+    body('clinics.*.clinic_name').trim().isLength({ min: 1, max: 120 }),
+    body('clinics.*.role').optional({ values: 'falsy' }).trim().isLength({ max: 120 }),
+    body('clinics.*.city').optional({ values: 'falsy' }).trim().isLength({ max: 80 }),
+    body('clinics.*.start_year').optional({ values: 'null' }).isInt({ min: 1950, max: 2100 }),
+    body('clinics.*.end_year').optional({ values: 'null' }).isInt({ min: 1950, max: 2100 }),
   ]),
   async (req, res) => {
-    const { name, specialty, location, description, cost, phone, working_hours_start, working_hours_end, avg_consultation_time, photos_url } = req.body;
+    const { clinics, ...body } = req.body;
+
+    const FIELDS = [
+      'name', 'specialty', 'location', 'description', 'cost', 'phone',
+      'working_hours_start', 'working_hours_end', 'avg_consultation_time',
+      'photos_url', 'email', 'website', 'address', 'years_experience', 'languages',
+    ] as const;
 
     const updates: Record<string, unknown> = {};
-    if (name !== undefined) updates.name = name;
-    if (specialty !== undefined) updates.specialty = specialty;
-    if (location !== undefined) updates.location = location;
-    if (description !== undefined) updates.description = description;
-    if (cost !== undefined) updates.cost = cost;
-    if (phone !== undefined) updates.phone = phone;
-    if (working_hours_start !== undefined) updates.working_hours_start = working_hours_start;
-    if (working_hours_end !== undefined) updates.working_hours_end = working_hours_end;
-    if (avg_consultation_time !== undefined) updates.avg_consultation_time = avg_consultation_time;
-    if (photos_url !== undefined) updates.photos_url = photos_url;
+    for (const field of FIELDS) {
+      if (body[field] !== undefined) updates[field] = blankToNull(body[field]);
+    }
 
     const { data, error } = await supabaseAdmin
       .from('doctors')
@@ -234,12 +296,25 @@ router.put(
 
     if (error) return res.status(500).json({ error: 'Failed to update profile' });
 
+    // Clinic posts live in their own table and are edited as a whole list, so
+    // the RPC swaps them atomically — a failed insert can't leave the doctor
+    // with no posts. Untouched when the request didn't mention them.
+    const saved: Record<string, unknown> = { ...data };
+    if (clinics !== undefined) {
+      const { error: clinicError } = await supabaseAdmin.rpc('replace_doctor_clinics', {
+        p_doctor_id: req.user!.id,
+        p_clinics: clinics,
+      });
+      if (clinicError) return res.status(500).json({ error: 'Failed to update clinic posts' });
+      saved.clinics = await getClinicPosts(req.user!.id);
+    }
+
     // Re-embed when a field that feeds the natural-language finder changed.
-    if (specialty !== undefined || location !== undefined || description !== undefined) {
+    if (body.specialty !== undefined || body.location !== undefined || body.description !== undefined) {
       void reindexDoctor(req.user!.id).catch(err => console.error('Doctor reindex failed:', err));
     }
 
-    res.json(data);
+    res.json(saved);
   }
 );
 

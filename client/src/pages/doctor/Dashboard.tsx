@@ -1,19 +1,34 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useForm } from 'react-hook-form';
+import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { useState, useRef } from 'react';
-import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2 } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2, Building2, Plus, X, Contact } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment } from '@/services/api';
+import { getDoctor, getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { formatDate, formatTime, cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
+import type { Doctor } from '@/types';
+
+// A blank year input means "not set", not year zero.
+const optionalYear = z.preprocess(
+  v => (v === '' || v === null || v === undefined ? null : Number(v)),
+  z.number().int().min(1950).max(2100).nullable()
+);
+
+const clinicSchema = z.object({
+  clinic_name: z.string().trim().min(1).max(120),
+  role: z.string().trim().max(120).optional(),
+  city: z.string().trim().max(80).optional(),
+  start_year: optionalYear,
+  end_year: optionalYear,
+});
 
 const profileSchema = z.object({
   name: z.string().min(2).max(100),
@@ -25,10 +40,47 @@ const profileSchema = z.object({
   working_hours_start: z.string().optional(),
   working_hours_end: z.string().optional(),
   avg_consultation_time: z.coerce.number().int().min(10).max(240).optional(),
+  email: z.string().trim().email().or(z.literal('')).optional(),
+  website: z.string().trim().url().or(z.literal('')).optional(),
+  address: z.string().trim().max(300).optional(),
+  years_experience: z.preprocess(
+    v => (v === '' || v === null || v === undefined ? null : Number(v)),
+    z.number().int().min(0).max(70).nullable()
+  ),
+  /** Comma-separated in the form; sent to the API as an array. */
+  languages: z.string().max(200).optional(),
+  clinics: z.array(clinicSchema).max(20),
 });
 
 type ProfileFormInput = z.input<typeof profileSchema>;
 type ProfileForm = z.output<typeof profileSchema>;
+
+/** Map the saved profile onto the form's shape. */
+function toFormValues(d: Doctor): ProfileFormInput {
+  return {
+    name: d.name ?? '',
+    specialty: d.specialty ?? '',
+    location: d.location ?? '',
+    description: d.description ?? '',
+    cost: d.cost ?? undefined,
+    phone: d.phone ?? '',
+    working_hours_start: d.working_hours_start?.slice(0, 5) ?? '',
+    working_hours_end: d.working_hours_end?.slice(0, 5) ?? '',
+    avg_consultation_time: d.avg_consultation_time ?? undefined,
+    email: d.email ?? '',
+    website: d.website ?? '',
+    address: d.address ?? '',
+    years_experience: d.years_experience ?? null,
+    languages: (d.languages ?? []).join(', '),
+    clinics: (d.clinics ?? []).map(c => ({
+      clinic_name: c.clinic_name,
+      role: c.role ?? '',
+      city: c.city ?? '',
+      start_year: c.start_year,
+      end_year: c.end_year,
+    })),
+  };
+}
 
 type Tab = 'profile' | 'appointments';
 
@@ -48,6 +100,14 @@ export default function DoctorDashboard() {
     queryFn: getDoctorAppointments,
   });
 
+  // The doctor's own saved profile. Without this the form would start blank and
+  // a save would overwrite every untouched field with an empty string.
+  const { data: profile } = useQuery({
+    queryKey: ['doctor', user?.id],
+    queryFn: () => getDoctor(user!.id),
+    enabled: !!user?.id,
+  });
+
   const completeMutation = useMutation({
     mutationFn: completeAppointment,
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['appointments', 'doctor'] }),
@@ -60,7 +120,19 @@ export default function DoctorDashboard() {
         const result = await uploadPhoto(photoFile);
         photos_url = result.url;
       }
-      return updateDoctorProfile({ ...data, ...(photos_url ? { photos_url } : {}) });
+      const { languages, clinics, ...rest } = data;
+      return updateDoctorProfile({
+        ...rest,
+        languages: languages ? languages.split(',').map(l => l.trim()).filter(Boolean) : [],
+        clinics: clinics.map(c => ({
+          clinic_name: c.clinic_name,
+          role: c.role || null,
+          city: c.city || null,
+          start_year: c.start_year,
+          end_year: c.end_year,
+        })),
+        ...(photos_url ? { photos_url } : {}),
+      });
     },
     onSuccess: () => {
       setSaveSuccess(true);
@@ -74,10 +146,20 @@ export default function DoctorDashboard() {
     onSuccess: async () => { await signOut(); navigate('/'); },
   });
 
-  const { register, handleSubmit, formState: { errors, isDirty } } = useForm<ProfileFormInput, unknown, ProfileForm>({
+  const { register, handleSubmit, control, reset, formState: { errors, isDirty } } = useForm<ProfileFormInput, unknown, ProfileForm>({
     resolver: zodResolver(profileSchema),
-    defaultValues: { name: user?.user_metadata?.name ?? '' },
+    defaultValues: { name: user?.user_metadata?.name ?? '', years_experience: null, clinics: [] },
   });
+
+  const { fields: clinicFields, append: addClinic, remove: removeClinic } = useFieldArray({
+    control,
+    name: 'clinics',
+  });
+
+  // Fill the form once the saved profile arrives.
+  useEffect(() => {
+    if (profile) reset(toFormValues(profile));
+  }, [profile, reset]);
 
   const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -149,6 +231,7 @@ export default function DoctorDashboard() {
               <Field label={t('Phone')} error={errors.phone?.message}><Input {...register('phone')} type="tel" /></Field>
               <Field label={t('Specialty')} error={errors.specialty?.message}><Input {...register('specialty')} /></Field>
               <Field label={t('Location')} error={errors.location?.message}><Input {...register('location')} /></Field>
+              <Field label={t('Years of experience')} error={errors.years_experience?.message}><Input {...register('years_experience')} type="number" min="0" max="70" /></Field>
               <Field label={t('Consultation cost ($)')} error={errors.cost?.message}><Input {...register('cost')} type="number" min="0" /></Field>
               <Field label={t('Session duration (min)')} error={errors.avg_consultation_time?.message}><Input {...register('avg_consultation_time')} type="number" min="10" max="240" /></Field>
               <Field label={t('Working hours start')} error={errors.working_hours_start?.message}><Input {...register('working_hours_start')} type="time" /></Field>
@@ -157,12 +240,89 @@ export default function DoctorDashboard() {
                 <Field label={t('About you')} error={errors.description?.message}>
                   <textarea
                     {...register('description')}
-                    rows={4}
-                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-none"
+                    rows={5}
+                    className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 resize-y"
                     placeholder={t('Describe your experience, specialties, approach...')}
                   />
                 </Field>
+                <p className="mt-1 text-xs text-muted-foreground">{t('This is the summary patients read on your public profile.')}</p>
               </div>
+            </CardContent>
+          </Card>
+
+          {/* Public contact details */}
+          <Card>
+            <CardHeader><CardTitle className="flex items-center gap-2"><Contact className="h-5 w-5" />{t('Public contact details')}</CardTitle></CardHeader>
+            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <Field label={t('Public email')} error={errors.email?.message}><Input {...register('email')} type="email" placeholder="contact@cabinet.tn" /></Field>
+              <Field label={t('Website')} error={errors.website?.message}><Input {...register('website')} type="url" placeholder="https://…" /></Field>
+              <div className="sm:col-span-2">
+                <Field label={t('Practice address')} error={errors.address?.message}>
+                  <Input {...register('address')} placeholder={t('Street, building — shown under the map')} />
+                </Field>
+              </div>
+              <div className="sm:col-span-2">
+                <Field label={t('Languages spoken')} error={errors.languages?.message}>
+                  <Input {...register('languages')} placeholder="Arabic, French, English" />
+                </Field>
+                <p className="mt-1 text-xs text-muted-foreground">{t('Separate with commas.')}</p>
+              </div>
+              <p className="text-xs text-muted-foreground sm:col-span-2">
+                {t('These appear on your public profile. Your login email is never shown.')}
+              </p>
+            </CardContent>
+          </Card>
+
+          {/* Clinic posts */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Building2 className="h-5 w-5" />{t('Clinic posts')}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                {t('Positions you hold, or held, at a clinic or hospital. Leave the end year empty for a post you still hold. No posts means your profile shows "Independent practice".')}
+              </p>
+
+              {clinicFields.map((field, i) => (
+                <div key={field.id} className="relative rounded-xl border bg-muted/20 p-4">
+                  <button
+                    type="button"
+                    onClick={() => removeClinic(i)}
+                    className="absolute right-2 top-2 rounded-md p-1 text-muted-foreground transition-colors hover:bg-destructive/10 hover:text-destructive"
+                    aria-label={t('Remove this post')}
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <Field label={t('Clinic or hospital')} error={errors.clinics?.[i]?.clinic_name?.message}>
+                      <Input {...register(`clinics.${i}.clinic_name`)} placeholder="Clinique El Amen" />
+                    </Field>
+                    <Field label={t('Your role')} error={errors.clinics?.[i]?.role?.message}>
+                      <Input {...register(`clinics.${i}.role`)} placeholder={t('Head of Cardiology')} />
+                    </Field>
+                    <Field label={t('City')} error={errors.clinics?.[i]?.city?.message}>
+                      <Input {...register(`clinics.${i}.city`)} placeholder="Tunis" />
+                    </Field>
+                    <div className="grid grid-cols-2 gap-3">
+                      <Field label={t('From')} error={errors.clinics?.[i]?.start_year?.message}>
+                        <Input {...register(`clinics.${i}.start_year`)} type="number" min="1950" max="2100" placeholder="2018" />
+                      </Field>
+                      <Field label={t('To')} error={errors.clinics?.[i]?.end_year?.message}>
+                        <Input {...register(`clinics.${i}.end_year`)} type="number" min="1950" max="2100" placeholder={t('Present')} />
+                      </Field>
+                    </div>
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => addClinic({ clinic_name: '', role: '', city: '', start_year: null, end_year: null })}
+              >
+                <Plus className="mr-2 h-4 w-4" />{t('Add a clinic post')}
+              </Button>
             </CardContent>
           </Card>
 

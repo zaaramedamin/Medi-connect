@@ -1,7 +1,21 @@
+/** A post a doctor holds (or held) at a clinic or hospital. */
+export interface ClinicPost {
+  id: number;
+  clinic_name: string;
+  role: string | null;
+  city: string | null;
+  start_year: number | null;
+  /** null = still there. */
+  end_year: number | null;
+}
+
+/** A clinic post being edited in the dashboard — no id until it's saved. */
+export type ClinicPostDraft = Omit<ClinicPost, 'id'> & { id?: number };
+
 export interface Doctor {
   id: string;
   name: string;
-  email?: string;
+  email?: string | null;
   description: string | null;
   phone: string | null;
   location: string | null;
@@ -16,6 +30,12 @@ export interface Doctor {
   avg_rating?: number;
   review_count?: number;
   created_at?: string;
+  // Public profile (seed/doctor-profile.sql). Absent until that migration runs.
+  website?: string | null;
+  address?: string | null;
+  years_experience?: number | null;
+  languages?: string[] | null;
+  clinics?: ClinicPost[];
 }
 
 export interface Review {

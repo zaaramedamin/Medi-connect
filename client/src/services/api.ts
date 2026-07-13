@@ -1,6 +1,6 @@
 import { supabase } from '@/lib/supabase';
 import type {
-  Doctor, Appointment, TimeSlot, Review, AdminDoctor, NewDoctorInput,
+  Doctor, ClinicPostDraft, Appointment, TimeSlot, Review, AdminDoctor, NewDoctorInput,
   Article, ArticleDetail, ArticleComment, NewArticleInput,
   AdminStats, AdminPatient, Order, OrderItem, AdminOrder,
   PatientProfile, PatientProfileInput,
@@ -53,7 +53,10 @@ export const getDoctor = (id: string) =>
 export const getDoctorSlots = (id: string, date: string) =>
   apiFetch<TimeSlot[]>(`/api/doctors/${id}/slots?date=${date}`);
 
-export const updateDoctorProfile = (updates: Partial<Doctor>) =>
+/** Profile edits. `clinics`, when present, replaces the doctor's whole list. */
+export type DoctorProfileUpdate = Partial<Omit<Doctor, 'clinics'>> & { clinics?: ClinicPostDraft[] };
+
+export const updateDoctorProfile = (updates: DoctorProfileUpdate) =>
   apiFetch<Doctor>('/api/doctors/profile', { method: 'PUT', body: JSON.stringify(updates) });
 
 export const blockSlot = (start_time: string, end_time: string) =>
