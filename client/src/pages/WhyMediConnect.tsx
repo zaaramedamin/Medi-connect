@@ -10,7 +10,6 @@ import { AnimatedText } from '@/components/ui/animated-text';
 import { NumberTicker } from '@/components/ui/number-ticker';
 import { TestimonialCarousel } from '@/components/features/TestimonialCarousel';
 import { useT } from '@/i18n';
-import doctorCta from '@/assets/doctor-cta.svg';
 
 const STATS = [
   { value: 500, suffix: '+', decimals: 0, label: 'Verified doctors' },
@@ -290,7 +289,16 @@ export default function WhyMediConnect() {
       <section id="for-doctors" className="border-y bg-secondary/40 scroll-mt-20">
         <div className="container grid items-center gap-10 py-16 md:py-20 lg:grid-cols-2">
           <BlurFade className="order-2 lg:order-1">
-            <img src={doctorCta} alt="Doctor dashboard preview" className="mx-auto w-full max-w-md" draggable={false} />
+            <div className="relative mx-auto max-w-md overflow-hidden rounded-3xl border shadow-xl">
+              <img
+                src="/backgrounds/for-doctors.jpg"
+                alt="A doctor at their desk reviewing their schedule"
+                className="w-full object-cover"
+                loading="lazy"
+                draggable={false}
+              />
+              <div aria-hidden className="absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent" />
+            </div>
           </BlurFade>
           <BlurFade className="order-1 lg:order-2">
             <span className="mb-3 inline-block rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold text-primary">For practitioners</span>

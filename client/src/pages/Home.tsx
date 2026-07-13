@@ -25,7 +25,6 @@ import { useDebounce } from '@/hooks/useDebounce';
 import { haversineKm, cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import heroIllustration from '@/assets/hero-illustration.svg';
-import doctorCta from '@/assets/doctor-cta.svg';
 
 const SPECIALTIES = [
   { icon: Stethoscope, label: 'General Medicine' },
@@ -418,12 +417,16 @@ export default function Home() {
           <section id="for-doctors" className="container py-20 scroll-mt-20">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <BlurFade className="order-2 lg:order-1" delay={0.1}>
-                <img
-                  src={doctorCta}
-                  alt="Doctor dashboard with weekly schedule and patient statistics"
-                  className="w-full max-w-md mx-auto"
-                  draggable={false}
-                />
+                <div className="relative mx-auto max-w-md overflow-hidden rounded-3xl border shadow-xl">
+                  <img
+                    src="/backgrounds/for-doctors.jpg"
+                    alt="A doctor at their desk reviewing their schedule"
+                    className="w-full object-cover"
+                    loading="lazy"
+                    draggable={false}
+                  />
+                  <div aria-hidden className="absolute inset-0 bg-linear-to-t from-black/30 via-transparent to-transparent" />
+                </div>
               </BlurFade>
               <BlurFade className="order-1 lg:order-2">
                 <span className="inline-block rounded-full bg-accent/10 text-accent px-3 py-1 text-xs font-semibold mb-4">
