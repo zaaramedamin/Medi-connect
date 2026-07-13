@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import type { User } from '@supabase/supabase-js';
 import { supabaseAdmin } from '../config/supabase';
 import { AuthUser, Role } from '../types';
 
@@ -15,15 +16,28 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     return res.status(401).json({ error: 'Invalid or expired token' });
   }
 
-  const role = user.user_metadata?.role as Role | undefined;
-
   req.user = {
     id: user.id,
     email: user.email!,
-    role: role ?? 'patient',
+    role: roleOf(user),
   } satisfies AuthUser;
 
   next();
+}
+
+/**
+ * The caller's role, taken ONLY from app_metadata.
+ *
+ * user_metadata is writable by the user themselves (supabase.auth.updateUser
+ * sends it), so trusting a role there let any patient escalate to admin by
+ * calling updateUser({ data: { role: 'admin' } }). app_metadata can only be
+ * written with the service-role key — i.e. by this server. Absence defaults to
+ * the least privilege. Roles are assigned in admin.ts (doctor onboarding) and
+ * backfilled by seed/harden-roles.sql.
+ */
+function roleOf(user: User): Role {
+  const role = user.app_metadata?.role;
+  return role === 'admin' || role === 'doctor' ? role : 'patient';
 }
 
 /**
@@ -38,8 +52,7 @@ export async function attachUserOptional(req: Request, _res: Response, next: Nex
   const token = authHeader.replace('Bearer ', '');
   const { data: { user } } = await supabaseAdmin.auth.getUser(token);
   if (user) {
-    const role = user.user_metadata?.role as Role | undefined;
-    req.user = { id: user.id, email: user.email!, role: role ?? 'patient' } satisfies AuthUser;
+    req.user = { id: user.id, email: user.email!, role: roleOf(user) } satisfies AuthUser;
   }
   next();
 }

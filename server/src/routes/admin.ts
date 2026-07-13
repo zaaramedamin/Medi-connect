@@ -40,12 +40,15 @@ router.post(
   async (req, res) => {
     const { email, password, name, specialty, location, cost, activate = true } = req.body;
 
-    // 1. Create the auth user with the doctor role
+    // 1. Create the auth user with the doctor role. The role goes in
+    //    app_metadata (service-role-only, so the doctor can't change it);
+    //    user_metadata carries only display data. See middleware/auth.ts.
     const { data: created, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
-      user_metadata: { name, role: 'doctor' },
+      user_metadata: { name },
+      app_metadata: { role: 'doctor' },
     });
 
     if (authError || !created.user) {

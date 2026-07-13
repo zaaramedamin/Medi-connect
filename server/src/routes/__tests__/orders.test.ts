@@ -22,7 +22,7 @@ function makeApp() {
 
 function mockUser(role: 'patient' | 'admin' = 'patient') {
   (mockAuth.getUser as jest.Mock).mockResolvedValue({
-    data: { user: { id: 'user-1', email: 'user@test.com', user_metadata: { role } } },
+    data: { user: { id: 'user-1', email: 'user@test.com', app_metadata: { role }, user_metadata: {} } },
     error: null,
   });
 }

@@ -36,7 +36,7 @@ export default function Register() {
 
   const onSubmit = async (data: FormData) => {
     setServerError(null);
-    const { error } = await signUp(data.email, data.password, data.name, 'patient');
+    const { error } = await signUp(data.email, data.password, data.name);
     if (error) {
       setServerError(error);
       return;
