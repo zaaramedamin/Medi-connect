@@ -12,7 +12,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { getDoctor, getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
-import { formatDate, formatTime, cn } from '@/lib/utils';
+import { cn, formatDate, formatTime, initialsOf } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { Doctor } from '@/types';
 
@@ -174,7 +174,7 @@ export default function DoctorDashboard() {
     }
   };
 
-  const initials = (user?.user_metadata?.name as string ?? 'D').split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+  const initials = initialsOf(user?.user_metadata?.name as string | undefined);
 
   return (
     <div className="container py-8 max-w-5xl">

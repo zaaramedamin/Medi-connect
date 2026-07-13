@@ -3,7 +3,7 @@ import { MessageCircle } from 'lucide-react';
 import { ARTICLE_CATEGORY_META, articleCover, articleText, formatArticleDate } from '@/data/articleMeta';
 import { useI18n } from '@/i18n';
 import type { Article } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, initialsOf } from '@/lib/utils';
 
 export function ArticleCard({ article }: { article: Article }) {
   const { t, lang } = useI18n();
@@ -52,7 +52,7 @@ export function ArticleCard({ article }: { article: Article }) {
 }
 
 export function AuthorAvatar({ name, photo, size = 32 }: { name: string; photo?: string | null; size?: number }) {
-  const initials = name.split(' ').map(n => n[0]).slice(0, 2).join('');
+  const initials = initialsOf(name);
   if (photo) {
     return <img src={photo} alt="" style={{ width: size, height: size }} className="shrink-0 rounded-full object-cover" />;
   }

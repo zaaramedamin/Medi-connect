@@ -26,7 +26,7 @@ import type { AdminDoctor, Order } from '@/types';
 import { ARTICLE_CATEGORY_META } from '@/data/articleMeta';
 import { formatDT } from '@/data/products';
 import { useT } from '@/i18n';
-import { formatDate, cn } from '@/lib/utils';
+import { cn, formatDate, initialsOf } from '@/lib/utils';
 
 type Tab = 'overview' | 'doctors' | 'patients' | 'sales' | 'posts' | 'assistant';
 
@@ -289,7 +289,7 @@ function DoctorsTab() {
         <Card>
           <CardContent className="divide-y p-0">
             {doctors?.map(doc => {
-              const initials = doc.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+              const initials = initialsOf(doc.name);
               const active = doc.subscription_status === 'active';
               return (
                 <div key={doc.id} className="flex flex-wrap items-center gap-4 p-4">
@@ -449,7 +449,7 @@ function PatientsTab() {
       <CardHeader><CardTitle className="text-base">{t('Patients')} ({patients?.length ?? 0})</CardTitle></CardHeader>
       <CardContent className="divide-y p-0">
         {patients?.map(p => {
-          const initials = p.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+          const initials = initialsOf(p.name);
           return (
             <div key={p.id} className="flex flex-wrap items-center gap-4 p-4">
               <Avatar className="h-10 w-10 shrink-0">

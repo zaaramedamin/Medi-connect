@@ -13,7 +13,7 @@ import { getMyAppointments, cancelAppointment, createReview, getMyOrders } from 
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { formatDT } from '@/data/products';
-import { formatDate, formatTime } from '@/lib/utils';
+import { formatDate, formatTime, initialsOf } from '@/lib/utils';
 
 const statusVariant: Record<string, 'success' | 'destructive' | 'secondary'> = {
   confirmed: 'success',
@@ -53,7 +53,7 @@ export default function PatientDashboard() {
 
   const userName = user?.user_metadata?.name ?? 'Patient';
   const avatarUrl = user?.user_metadata?.avatar_url as string | undefined;
-  const userInitials = userName.split(' ').map((n: string) => n[0]).join('').slice(0, 2).toUpperCase();
+  const userInitials = initialsOf(userName);
   const upcoming = appointments?.filter(a => a.status === 'confirmed' && new Date(a.time_slot) > new Date());
   const past = appointments?.filter(a => a.status !== 'confirmed' || new Date(a.time_slot) <= new Date());
 
@@ -154,7 +154,7 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
   cancelling?: boolean;
 }) {
   const doc = apt.doctors;
-  const initials = doc?.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() ?? '??';
+  const initials = initialsOf(doc?.name);
 
   const t = useT();
   const queryClient = useQueryClient();

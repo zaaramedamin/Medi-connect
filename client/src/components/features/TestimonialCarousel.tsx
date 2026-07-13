@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Star, ChevronLeft, ChevronRight } from 'lucide-react';
+import { initialsOf } from '@/lib/utils';
 
 const TESTIMONIALS = [
   { name: 'Sarra B.', role: 'Patient', quote: 'Booked a cardiologist in under a minute. The confirmation email arrived instantly — no phone calls, no waiting.' },
@@ -89,7 +90,7 @@ export function TestimonialCarousel() {
             <blockquote className="flex-1 text-sm leading-relaxed">“{t.quote}”</blockquote>
             <figcaption className="mt-5 flex items-center gap-3 border-t pt-5">
               <span className="flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-xs font-bold text-secondary-foreground">
-                {t.name.split(' ').map(n => n[0]).join('')}
+                {initialsOf(t.name)}
               </span>
               <div>
                 <p className="text-sm font-semibold leading-none">{t.name}</p>

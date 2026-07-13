@@ -4,9 +4,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Minus, Plus, LocateFixed, Navigation, MapPin, Maximize2, Layers, Map as MapIcon } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { useDarkMode } from '@/hooks/useDarkMode';
 import { useT } from '@/i18n';
-import { cn } from '@/lib/utils';
+import { cn, initialsOf } from '@/lib/utils';
 
 /** Street level — close enough to see the building, wide enough to place it. */
 const DEFAULT_ZOOM = 16;
@@ -19,23 +18,21 @@ const OSM_CREDIT =
 interface Basemap {
   url: string;
   attribution: string;
-  /** Only for providers whose URL has an {s} placeholder. */
-  subdomains?: string;
+  /**
+   * Required, even for providers whose URL has no {s} placeholder. Leaflet's
+   * getTileUrl() calls _getSubdomain() unconditionally, and that reads
+   * .subdomains.length — so an undefined value throws on every single tile.
+   */
+  subdomains: string;
   maxZoom: number;
 }
 
-// CARTO's basemaps are far quieter than raw OSM tiles: fewer competing colours,
+// CARTO's basemap is far quieter than raw OSM tiles: fewer competing colours,
 // so the pin is the only thing that draws the eye. `{r}` gives @2x tiles on
 // retina screens automatically.
-const BASEMAPS: Record<'light' | 'dark' | 'satellite', Basemap> = {
-  light: {
+const BASEMAPS: Record<'map' | 'satellite', Basemap> = {
+  map: {
     url: 'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-    attribution: `${OSM_CREDIT} &copy; <a href="https://carto.com/attributions">CARTO</a>`,
-    subdomains: 'abcd',
-    maxZoom: 20,
-  },
-  dark: {
-    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
     attribution: `${OSM_CREDIT} &copy; <a href="https://carto.com/attributions">CARTO</a>`,
     subdomains: 'abcd',
     maxZoom: 20,
@@ -44,6 +41,7 @@ const BASEMAPS: Record<'light' | 'dark' | 'satellite', Basemap> = {
   satellite: {
     url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
     attribution: 'Imagery &copy; <a href="https://www.esri.com">Esri</a>, Maxar, Earthstar Geographics',
+    subdomains: 'abc', // unused by the URL, but see the note on the field above
     maxZoom: 19,
   },
 };
@@ -140,7 +138,7 @@ function ZoomControls({ center }: { center: [number, number] }) {
     'flex h-9 w-9 items-center justify-center bg-background/90 text-foreground backdrop-blur transition-colors hover:bg-background hover:text-primary';
 
   return (
-    <div ref={ref} className="absolute right-3 top-3 z-[1000] flex flex-col overflow-hidden rounded-xl border shadow-lg">
+    <div ref={ref} className="absolute right-3 top-3 z-1000 flex flex-col overflow-hidden rounded-xl border shadow-lg">
       <button type="button" onClick={() => map.zoomIn()} className={cn(btn, 'border-b')} aria-label={t('Zoom in')}>
         <Plus className="h-4 w-4" />
       </button>
@@ -175,7 +173,7 @@ function StyleSwitch({ value, onChange }: { value: BaseStyle; onChange: (s: Base
   ];
 
   return (
-    <div ref={ref} className="absolute left-3 top-3 z-[1000] flex overflow-hidden rounded-xl border shadow-lg">
+    <div ref={ref} className="absolute left-3 top-3 z-1000 flex overflow-hidden rounded-xl border shadow-lg">
       {options.map(({ key, label, icon: Icon }) => (
         <button
           key={key}
@@ -200,18 +198,17 @@ function StyleSwitch({ value, onChange }: { value: BaseStyle; onChange: (s: Base
 interface MapViewProps {
   center: [number, number];
   style: BaseStyle;
-  dark: boolean;
   pin: HTMLElement;
   interactive: boolean;
   /** Fullscreen doesn't need the click-to-zoom gate — the page can't scroll behind it. */
   gateScroll?: boolean;
 }
 
-function MapView({ center, style, dark, pin, interactive, gateScroll = true }: MapViewProps) {
+function MapView({ center, style, pin, interactive, gateScroll = true }: MapViewProps) {
   const t = useT();
   const [engaged, setEngaged] = useState(!gateScroll);
 
-  const base = style === 'satellite' ? BASEMAPS.satellite : dark ? BASEMAPS.dark : BASEMAPS.light;
+  const base = BASEMAPS[style];
   const icon = useMemo(() => L.divIcon({ html: pin, className: 'border-0 bg-transparent', iconSize: [48, 59], iconAnchor: [24, 59] }), [pin]);
 
   // A focus ring around the exact point. Reads as "the practice is in here",
@@ -235,13 +232,15 @@ function MapView({ center, style, dark, pin, interactive, gateScroll = true }: M
         {/* Keyed so a style change fully remounts the layer — subdomains and
             maxZoom differ between providers and setUrl() alone won't update them. */}
         <TileLayer
-          key={style === 'satellite' ? 'satellite' : dark ? 'dark' : 'light'}
+          key={style}
           url={base.url}
           attribution={base.attribution}
           subdomains={base.subdomains}
           maxZoom={base.maxZoom}
         />
-        {style === 'satellite' && <TileLayer key="sat-labels" url={SATELLITE_LABELS} maxZoom={19} />}
+        {style === 'satellite' && (
+          <TileLayer key="sat-labels" url={SATELLITE_LABELS} subdomains="abc" maxZoom={19} />
+        )}
 
         <Circle
           center={center}
@@ -256,7 +255,7 @@ function MapView({ center, style, dark, pin, interactive, gateScroll = true }: M
       </MapContainer>
 
       {gateScroll && !engaged && (
-        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1000] flex justify-center pb-6">
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 z-1000 flex justify-center pb-6">
           <span className="rounded-full bg-background/85 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm backdrop-blur">
             {t('Click the map to zoom')}
           </span>
@@ -280,11 +279,10 @@ interface Props {
 
 export function DoctorLocationMap({ lat, lng, address, location, name, photoUrl, className }: Props) {
   const t = useT();
-  const dark = useDarkMode();
   const [style, setStyle] = useState<BaseStyle>('map');
   const [expanded, setExpanded] = useState(false);
 
-  const initials = name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const initials = initialsOf(name);
 
   // One element per map instance — Leaflet appends it, so the inline map and the
   // fullscreen map can't share a single node.
@@ -313,14 +311,14 @@ export function DoctorLocationMap({ lat, lng, address, location, name, photoUrl,
     <>
       <div className={cn('overflow-hidden rounded-2xl border', className)}>
         <div className="relative z-0 h-80 w-full sm:h-96">
-          <MapView center={center} style={style} dark={dark} pin={inlinePin} interactive />
+          <MapView center={center} style={style} pin={inlinePin} interactive />
 
           <StyleSwitch value={style} onChange={setStyle} />
 
           <button
             type="button"
             onClick={() => setExpanded(true)}
-            className="absolute bottom-3 right-3 z-[1000] flex items-center gap-1.5 rounded-xl border bg-background/90 px-3 py-2 text-xs font-semibold backdrop-blur transition-colors hover:bg-background hover:text-primary"
+            className="absolute bottom-3 right-3 z-1000 flex items-center gap-1.5 rounded-xl border bg-background/90 px-3 py-2 text-xs font-semibold backdrop-blur transition-colors hover:bg-background hover:text-primary"
           >
             <Maximize2 className="h-3.5 w-3.5" />
             {t('Expand')}
@@ -364,7 +362,7 @@ export function DoctorLocationMap({ lat, lng, address, location, name, photoUrl,
 
           <div className="relative h-[65vh] overflow-hidden rounded-xl border">
             {dialogPin && (
-              <MapView center={center} style={style} dark={dark} pin={dialogPin} interactive gateScroll={false} />
+              <MapView center={center} style={style} pin={dialogPin} interactive gateScroll={false} />
             )}
             <StyleSwitch value={style} onChange={setStyle} />
           </div>

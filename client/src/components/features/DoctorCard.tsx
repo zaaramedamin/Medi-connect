@@ -8,6 +8,7 @@ import { TiltCard } from '@/components/ui/tilt-card';
 import { StarRating } from '@/components/ui/star-rating';
 import { useT } from '@/i18n';
 import type { Doctor } from '@/types';
+import { initialsOf } from '@/lib/utils';
 
 interface Props {
   doctor: Doctor;
@@ -15,7 +16,7 @@ interface Props {
 
 export function DoctorCard({ doctor }: Props) {
   const t = useT();
-  const initials = doctor.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const initials = initialsOf(doctor.name);
 
   return (
     <TiltCard className="h-full">

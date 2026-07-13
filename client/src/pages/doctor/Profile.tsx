@@ -17,7 +17,7 @@ import { DoctorLocationMap } from '@/components/features/DoctorLocationMap';
 import { getDoctor, getDoctorReviews, bookAppointment } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
-import { formatDate, formatTime, cn } from '@/lib/utils';
+import { cn, formatDate, formatTime, initialsOf, splitName } from '@/lib/utils';
 import type { Doctor, ClinicPost, Review } from '@/types';
 
 // ── Building blocks ──────────────────────────────────────────────────
@@ -127,7 +127,7 @@ function ClinicPostRow({ post, isLast }: { post: ClinicPost; isLast: boolean }) 
 }
 
 function ReviewRow({ review }: { review: Review }) {
-  const initials = review.patient_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const initials = initialsOf(review.patient_name);
   return (
     <li className="rounded-xl border bg-background p-4">
       <div className="flex items-center justify-between gap-2">
@@ -153,7 +153,8 @@ function ReviewRow({ review }: { review: Review }) {
 
 function Hero({ doctor, onBook }: { doctor: Doctor; onBook: () => void }) {
   const t = useT();
-  const initials = doctor.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase();
+  const initials = initialsOf(doctor.name);
+  const { title, name } = splitName(doctor.name);
 
   const chips = [
     doctor.location && { icon: MapPin, text: doctor.location },
@@ -165,66 +166,78 @@ function Hero({ doctor, onBook }: { doctor: Doctor; onBook: () => void }) {
     doctor.languages?.length && { icon: Languages, text: doctor.languages.map(l => t(l)).join(', ') },
   ].filter(Boolean) as { icon: React.ElementType; text: string }[];
 
+  const actions = (
+    <>
+      {doctor.phone && (
+        <Button asChild variant="outline" size="sm">
+          <a href={`tel:${doctor.phone}`}><Phone className="mr-1.5 h-4 w-4" />{t('Call')}</a>
+        </Button>
+      )}
+      <Button size="sm" onClick={onBook}>
+        <CalendarCheck className="mr-1.5 h-4 w-4" />
+        {t('Book an appointment')}
+      </Button>
+    </>
+  );
+
   return (
-    <div className="relative mb-8">
-      {/* Cover */}
-      <div className="h-36 w-full bg-linear-to-br from-primary via-primary/80 to-accent sm:h-44">
+    <div className="mb-8">
+      {/* Cover. Deep slate rather than a saturated brand gradient — the photo and
+          the name should carry the colour, not the banner behind them. */}
+      <div className="relative h-28 w-full overflow-hidden bg-linear-to-br from-slate-900 via-slate-800 to-slate-900 sm:h-36">
+        <div aria-hidden className="absolute -bottom-20 -left-10 h-56 w-[28rem] rounded-full bg-primary/20 blur-3xl" />
+        <div aria-hidden className="absolute -top-24 right-0 h-56 w-80 rounded-full bg-accent/10 blur-3xl" />
         <div
           aria-hidden
-          className="h-full w-full opacity-40"
+          className="absolute inset-0 opacity-[0.05]"
           style={{
-            backgroundImage:
-              'radial-gradient(circle at 1px 1px, rgba(255,255,255,0.35) 1px, transparent 0)',
-            backgroundSize: '22px 22px',
+            backgroundImage: 'repeating-linear-gradient(45deg, #fff 0 1px, transparent 1px 14px)',
           }}
         />
       </div>
 
       <div className="container max-w-6xl">
-        <div className="-mt-16 flex flex-col gap-5 sm:-mt-14 sm:flex-row sm:items-end">
-          <Avatar className="h-32 w-32 shrink-0 rounded-2xl border-4 border-background shadow-xl">
+        {/* Only the avatar overlaps the cover — text on that gradient would be
+            unreadable, so the identity block starts below it. */}
+        <div className="-mt-12 flex items-end justify-between gap-4 sm:-mt-14">
+          <Avatar className="h-24 w-24 shrink-0 rounded-2xl border-4 border-background shadow-xl sm:h-28 sm:w-28">
             {doctor.photos_url && <AvatarImage src={doctor.photos_url} alt={doctor.name} className="rounded-xl object-cover" />}
-            <AvatarFallback className="rounded-xl bg-secondary text-3xl font-bold text-secondary-foreground">
+            <AvatarFallback className="rounded-xl bg-secondary text-2xl font-bold text-secondary-foreground">
               {initials}
             </AvatarFallback>
           </Avatar>
 
-          <div className="flex-1 pb-1">
-            <div className="flex items-center gap-2">
-              <h1 className="text-2xl font-bold sm:text-3xl">{doctor.name}</h1>
-              <BadgeCheck className="h-5 w-5 shrink-0 text-accent" aria-label={t('Verified doctor')} />
-            </div>
+          <div className="hidden shrink-0 gap-2 pb-1 sm:flex">{actions}</div>
+        </div>
 
-            <div className="mt-2 flex flex-wrap items-center gap-3">
-              {doctor.specialty && (
-                <Badge variant="secondary" className="font-semibold">{doctor.specialty}</Badge>
-              )}
-              <StarRating value={doctor.avg_rating ?? 0} count={doctor.review_count} size={15} />
-            </div>
-
-            {chips.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
-                {chips.map(({ icon: Icon, text }) => (
-                  <span key={text} className="flex items-center gap-1.5">
-                    <Icon className="h-4 w-4 shrink-0" />
-                    {text}
-                  </span>
-                ))}
-              </div>
-            )}
+        <div className="mt-4">
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              {title && <span className="mr-1.5 font-medium text-muted-foreground">{title}</span>}
+              {name}
+            </h1>
+            <BadgeCheck className="h-5 w-5 shrink-0 text-accent" aria-label={t('Verified doctor')} />
           </div>
 
-          <div className="flex shrink-0 flex-wrap gap-2 pb-1">
-            {doctor.phone && (
-              <Button asChild variant="outline" size="sm">
-                <a href={`tel:${doctor.phone}`}><Phone className="mr-1.5 h-4 w-4" />{t('Call')}</a>
-              </Button>
+          <div className="mt-2.5 flex flex-wrap items-center gap-3">
+            {doctor.specialty && (
+              <Badge variant="secondary" className="font-semibold">{doctor.specialty}</Badge>
             )}
-            <Button size="sm" onClick={onBook}>
-              <CalendarCheck className="mr-1.5 h-4 w-4" />
-              {t('Book an appointment')}
-            </Button>
+            <StarRating value={doctor.avg_rating ?? 0} count={doctor.review_count} size={15} />
           </div>
+
+          {chips.length > 0 && (
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-sm text-muted-foreground">
+              {chips.map(({ icon: Icon, text }) => (
+                <span key={text} className="flex items-center gap-1.5">
+                  <Icon className="h-4 w-4 shrink-0" />
+                  {text}
+                </span>
+              ))}
+            </div>
+          )}
+
+          <div className="mt-4 flex flex-wrap gap-2 sm:hidden">{actions}</div>
         </div>
       </div>
     </div>
