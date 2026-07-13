@@ -1,5 +1,6 @@
 import { supabaseAdmin } from '../config/supabase';
 import { embedQuery } from './embeddings';
+import { getConfig } from './ragConfig';
 
 export interface RetrievedChunk {
   id: number;
@@ -24,7 +25,9 @@ export async function retrieveChunks(
   question: string,
   opts: RetrieveOptions = {}
 ): Promise<RetrievedChunk[]> {
-  const limit = Math.min(Math.max(opts.limit ?? 5, 1), 10);
+  // top-k: explicit opts.limit wins, else the admin-configured default.
+  const fallback = Number((await getConfig()).retrieval_limit);
+  const limit = Math.min(Math.max(opts.limit ?? fallback, 1), 10);
   const queryEmbedding = await embedQuery(question);
 
   // Hybrid: fuse full-text keyword ranking with vector similarity (RRF). The

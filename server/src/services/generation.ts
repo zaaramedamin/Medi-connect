@@ -1,19 +1,15 @@
 import { getHfClient, withHfRetry } from './hfClient';
 import { retrieveChunks, type RetrievedChunk } from './retrieval';
+import { getConfig } from './ragConfig';
 
-// The generation model (see RAG.md Phase 0). Overridable via env so it can be
-// swapped without a code change if a provider stops serving it on the free tier.
-const CHAT_MODEL = process.env.HF_CHAT_MODEL || 'Qwen/Qwen2.5-7B-Instruct';
-
-// Below this top similarity, treat retrieval as "nothing relevant" and refuse
-// WITHOUT spending an LLM call. Kept deliberately low: e5 similarity scores sit
-// in a narrow high band (an off-topic question still scores ~0.82), so this is
-// only a floor for the truly-empty case — the real guardrail is the grounding
-// prompt below, which makes the model refuse when the context doesn't answer.
-const MIN_TOP_SIMILARITY = 0.78;
-
-// How many retrieved chunks to feed the model as context.
-const CONTEXT_CHUNKS = 5;
+// All the tunables below (generation model, similarity floor, context size,
+// max tokens, temperatures) are now runtime-editable from the admin console —
+// they're read from getConfig() per request. See services/ragConfig.ts for the
+// defaults and the rationale that used to live in these constants:
+//   - min_top_similarity: below it, refuse WITHOUT an LLM call. Deliberately
+//     low because e5 scores sit in a narrow high band; the real guardrail is
+//     the grounding prompt, which refuses when the context doesn't answer.
+//   - context_chunks: how many retrieved chunks are fed to the model.
 
 const REFUSAL: Record<'en' | 'fr', string> = {
   en: "I don't have information on that in our articles. For anything specific, please book an appointment with a doctor.",
@@ -78,18 +74,21 @@ export async function answerQuestion(
   const mode: AssistantMode = opts.mode ?? 'articles';
   const refusalLang: 'en' | 'fr' = lang ?? 'en';
   const hf = getHfClient();
+  const cfg = await getConfig();
+  const chatModel = String(cfg.chat_model);
+  const maxTokens = Number(cfg.answer_max_tokens);
 
   // General mode: answer from the model's own knowledge, no retrieval, no sources.
   if (mode === 'general') {
     const completion = await withHfRetry(() =>
       hf.chatCompletion({
-        model: CHAT_MODEL,
+        model: chatModel,
         messages: [
           { role: 'system', content: GENERAL_SYSTEM },
           { role: 'user', content: question },
         ],
-        max_tokens: 500,
-        temperature: 0.4,
+        max_tokens: maxTokens,
+        temperature: Number(cfg.general_temperature),
       })
     );
     const answer = completion.choices?.[0]?.message?.content?.trim() || REFUSAL[refusalLang];
@@ -97,13 +96,13 @@ export async function answerQuestion(
   }
 
   // Articles mode: grounded RAG over the doctor articles.
-  const chunks = await retrieveChunks(question, { lang, limit: CONTEXT_CHUNKS });
+  const chunks = await retrieveChunks(question, { lang, limit: Number(cfg.context_chunks) });
 
   // Guardrail 1: nothing relevant retrieved. Check the best cosine across the
   // pool (hybrid ranking may not put the highest-cosine chunk first) — if even
   // the closest article is too far, refuse without an LLM call.
   const topSim = chunks.reduce((max, c) => Math.max(max, c.similarity), 0);
-  if (!chunks.length || topSim < MIN_TOP_SIMILARITY) {
+  if (!chunks.length || topSim < Number(cfg.min_top_similarity)) {
     return { answer: REFUSAL[refusalLang], grounded: false, chunks };
   }
 
@@ -111,10 +110,10 @@ export async function answerQuestion(
   // refuses on its own when the retrieved passages don't address the question.
   const completion = await withHfRetry(() =>
     hf.chatCompletion({
-      model: CHAT_MODEL,
+      model: chatModel,
       messages: buildMessages(question, chunks),
-      max_tokens: 500,
-      temperature: 0.3, // low — this is factual grounding, not creative writing
+      max_tokens: maxTokens,
+      temperature: Number(cfg.grounded_temperature), // low — factual grounding
     })
   );
 

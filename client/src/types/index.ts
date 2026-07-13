@@ -178,3 +178,51 @@ export interface AdminPatient {
   created_at: string;
   appointments: number;
 }
+
+// ── RAG admin console ────────────────────────────────────────────────
+export interface RagParam {
+  key: string;
+  label: string;
+  group: 'models' | 'chunking' | 'retrieval' | 'generation' | 'advisor';
+  type: 'string' | 'number' | 'enum';
+  default: string | number;
+  value: string | number;
+  isOverridden: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
+  options?: string[];
+  freeText?: boolean;
+  requiresReingest?: boolean;
+  description: string;
+}
+
+export interface RagLogRow {
+  id: number;
+  created_at: string;
+  user_id: string | null;
+  user_email: string | null;
+  endpoint: 'ask' | 'search' | 'product-advice';
+  mode: string | null;
+  question: string | null;
+  lang: string | null;
+  embedding_model: string | null;
+  chat_model: string | null;
+  params: Record<string, unknown> | null;
+  retrieved_count: number | null;
+  top_similarity: number | null;
+  grounded: boolean | null;
+  refused: boolean | null;
+  latency_ms: number | null;
+  error: string | null;
+}
+
+export interface RagStats {
+  total: number;
+  last24h: number;
+  byEndpoint: Record<string, number>;
+  grounded: number;
+  refused: number;
+  avgLatencyMs: number | null;
+  topUsers: { user_email: string | null; count: number }[];
+}

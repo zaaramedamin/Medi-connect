@@ -1,25 +1,23 @@
 import { getHfClient, withHfRetry } from './hfClient';
 import { supabaseAdmin } from '../config/supabase';
+import { getConfig, EMBEDDING_DIM } from './ragConfig';
 
-// The embedding model (see RAG.md Phase 0). Its output dimension (384) is
-// locked to the article_chunks.embedding VECTOR(384) column — changing the
-// model means changing that column AND re-embedding the whole corpus.
-const EMBEDDING_MODEL = 'intfloat/multilingual-e5-small';
-export const EMBEDDING_DIM = 384;
-
-// Upper bound of words a single chunk grows to before we start a new one.
-// Small enough to stay topically focused, big enough to keep a paragraph's
-// surrounding context intact.
-const MAX_CHUNK_WORDS = 400;
+// The embedding model and chunk size are runtime-editable from the admin
+// console (services/ragConfig.ts). The output dimension (EMBEDDING_DIM = 384)
+// stays locked to the article_chunks.embedding VECTOR(384) column — switching
+// to a model with a different dimension means migrating that column AND
+// re-embedding the whole corpus, so the console flags it as re-ingest-only.
+export { EMBEDDING_DIM };
 
 // E5 models require a task prefix on the input: "passage: " for stored
 // documents and "query: " for the user's question. Skipping it measurably
 // hurts retrieval quality — do not remove the prefixes.
 async function embed(input: string): Promise<number[]> {
   const hf = getHfClient();
+  const cfg = await getConfig();
   const output = await withHfRetry(() =>
     hf.featureExtraction({
-      model: EMBEDDING_MODEL,
+      model: String(cfg.embedding_model),
       inputs: input,
       provider: 'hf-inference',
     })
@@ -37,13 +35,16 @@ export const embedPassage = (text: string): Promise<number[]> => embed(`passage:
 /** Embed a user question for retrieval (query side). */
 export const embedQuery = (text: string): Promise<number[]> => embed(`query: ${text}`);
 
+// Fallback chunk size if config can't be read (matches the ragConfig default).
+const DEFAULT_MAX_CHUNK_WORDS = 400;
+
 /**
  * Split article text into chunks. Simple paragraph-based strategy: keep
  * paragraphs together and start a new chunk once adding the next one would
- * push the current chunk past MAX_CHUNK_WORDS. Most of these articles are
- * short and become a single chunk — that's fine and keeps retrieval focused.
+ * push the current chunk past maxWords. Most of these articles are short and
+ * become a single chunk — that's fine and keeps retrieval focused.
  */
-export function chunkText(text: string): string[] {
+export function chunkText(text: string, maxWords: number = DEFAULT_MAX_CHUNK_WORDS): string[] {
   const paragraphs = text
     .split(/\n+/)
     .map((p) => p.trim())
@@ -55,7 +56,7 @@ export function chunkText(text: string): string[] {
 
   for (const para of paragraphs) {
     const words = para.split(/\s+/).length;
-    if (currentWords > 0 && currentWords + words > MAX_CHUNK_WORDS) {
+    if (currentWords > 0 && currentWords + words > maxWords) {
       chunks.push(current);
       current = '';
       currentWords = 0;
@@ -107,8 +108,9 @@ export async function ingestArticle(article: IngestableArticle): Promise<number>
     embedding: string;
   }> = [];
 
+  const maxWords = Number((await getConfig()).chunk_max_words);
   for (const { lang, title, body } of langs) {
-    const chunks = chunkText(buildDoc(title, body));
+    const chunks = chunkText(buildDoc(title, body), maxWords);
     for (let i = 0; i < chunks.length; i++) {
       const embedding = await embedPassage(chunks[i]);
       rows.push({ article_id: article.id, chunk_index: i, lang, content: chunks[i], embedding: toVector(embedding) });

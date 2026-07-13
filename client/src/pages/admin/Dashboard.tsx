@@ -8,8 +8,9 @@ import { toast } from 'sonner';
 import {
   UserPlus, Trash2, ShieldCheck, ShieldOff, Stethoscope, LayoutDashboard,
   Users, Newspaper, Activity, CalendarCheck, Wallet, TrendingUp, Clock, PenSquare,
-  Package, Pencil, ShoppingBag,
+  Package, Pencil, ShoppingBag, Bot,
 } from 'lucide-react';
+import RagConsoleTab from './RagConsole';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -27,7 +28,7 @@ import { formatDT } from '@/data/products';
 import { useT } from '@/i18n';
 import { formatDate, cn } from '@/lib/utils';
 
-type Tab = 'overview' | 'doctors' | 'patients' | 'sales' | 'posts';
+type Tab = 'overview' | 'doctors' | 'patients' | 'sales' | 'posts' | 'assistant';
 
 const TABS: { value: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { value: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -35,6 +36,7 @@ const TABS: { value: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { value: 'patients', label: 'Patients', icon: Users },
   { value: 'sales', label: 'Sales', icon: Package },
   { value: 'posts', label: 'Posts', icon: Newspaper },
+  { value: 'assistant', label: 'AI Console', icon: Bot },
 ];
 
 export default function AdminDashboard() {
@@ -71,6 +73,7 @@ export default function AdminDashboard() {
       {tab === 'patients' && <PatientsTab />}
       {tab === 'sales' && <SalesTab />}
       {tab === 'posts' && <PostsTab />}
+      {tab === 'assistant' && <RagConsoleTab />}
     </div>
   );
 }

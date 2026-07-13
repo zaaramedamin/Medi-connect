@@ -4,6 +4,7 @@ import type {
   Article, ArticleDetail, ArticleComment, NewArticleInput,
   AdminStats, AdminPatient, Order, OrderItem, AdminOrder,
   PatientProfile, PatientProfileInput,
+  RagParam, RagLogRow, RagStats,
 } from '@/types';
 
 // In dev this is empty and Vite proxies /api → localhost. In production set
@@ -132,6 +133,36 @@ export const getAdminPatients = () => apiFetch<AdminPatient[]>('/api/admin/patie
 
 export const deletePatient = (id: string) =>
   apiFetch<void>(`/api/admin/patients/${id}`, { method: 'DELETE' });
+
+// RAG admin console
+export const getRagConfig = () =>
+  apiFetch<{ params: RagParam[] }>('/api/admin/rag/config');
+
+export const setRagParam = (key: string, value: string | number) =>
+  apiFetch<{ key: string; value: string | number }>('/api/admin/rag/config', {
+    method: 'PATCH',
+    body: JSON.stringify({ key, value }),
+  });
+
+export const resetRagParam = (key?: string) =>
+  apiFetch<{ reset: string }>('/api/admin/rag/config/reset', {
+    method: 'POST',
+    body: JSON.stringify(key ? { key } : {}),
+  });
+
+export const getRagLogs = (limit = 50) =>
+  apiFetch<{ logs: RagLogRow[] }>(`/api/admin/rag/logs?limit=${limit}`);
+
+export const clearRagLogs = () =>
+  apiFetch<{ removed: number }>('/api/admin/rag/logs', { method: 'DELETE' });
+
+export const getRagStats = () => apiFetch<RagStats>('/api/admin/rag/stats');
+
+export const runRagCommand = (command: string) =>
+  apiFetch<{ lines: string[] }>('/api/admin/rag/console', {
+    method: 'POST',
+    body: JSON.stringify({ command }),
+  });
 
 // Community (articles + discussion)
 export const getArticles = (category?: string) => {

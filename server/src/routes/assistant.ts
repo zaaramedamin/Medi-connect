@@ -1,18 +1,28 @@
 import { Router } from 'express';
 import { body } from 'express-validator';
 import { validate } from '../middleware/validate';
+import { attachUserOptional } from '../middleware/auth';
 import { supabaseAdmin } from '../config/supabase';
 import { retrieveChunks, type RetrievedChunk } from '../services/retrieval';
 import { answerQuestion } from '../services/generation';
 import { adviseProducts } from '../services/productAdvisor';
+import { getConfig } from '../services/ragConfig';
+import { logRagRequest } from '../services/ragLog';
 
 const router = Router();
+
+// Capture the caller's identity when they're logged in (the assistant is
+// public, so this never rejects) — used for the admin console's request log.
+router.use(attachUserOptional);
 
 // Only cite a source when retrieval was reasonably confident. e5 similarity
 // sits in a narrow high band (relevant matches ~0.87+, off-topic ~0.82), so
 // this bar keeps citations off a soft-refusal answer without gating the answer
-// itself — that's the generation service's grounding prompt's job.
-const CITE_MIN_SIMILARITY = 0.84;
+// itself — that's the grounding prompt's job. Runtime-editable (cite_min_similarity).
+
+// The best cosine similarity across a set of chunks (0 when empty).
+const topSimilarity = (chunks: RetrievedChunk[]): number =>
+  chunks.reduce((max, c) => Math.max(max, c.similarity), 0);
 
 interface ArticleMeta {
   id: number;
@@ -42,13 +52,14 @@ const titleFor = (meta: ArticleMeta | undefined, lang: 'en' | 'fr'): string =>
 // Collapse retrieved chunks to distinct source articles (best similarity per
 // article), enriched for display. Used as citations under a generated answer.
 async function distinctSources(chunks: RetrievedChunk[], max = 3) {
+  const citeMin = Number((await getConfig()).cite_min_similarity);
   const best = new Map<number, RetrievedChunk>();
   for (const c of chunks) {
     const prev = best.get(c.article_id);
     if (!prev || c.similarity > prev.similarity) best.set(c.article_id, c);
   }
   const top = [...best.values()]
-    .filter((c) => c.similarity >= CITE_MIN_SIMILARITY)
+    .filter((c) => c.similarity >= citeMin)
     .sort((a, b) => b.similarity - a.similarity)
     .slice(0, max);
   const meta = await fetchArticleMeta(top.map((c) => c.article_id));
@@ -77,6 +88,8 @@ router.post(
       lang?: 'en' | 'fr';
       limit?: number;
     };
+    const started = Date.now();
+    const cfg = await getConfig();
 
     try {
       const chunks = await retrieveChunks(question, { lang: lang ?? null, limit });
@@ -90,9 +103,30 @@ router.post(
         similarity: Number(c.similarity.toFixed(4)),
         content: c.content,
       }));
+      logRagRequest({
+        user_id: req.user?.id ?? null,
+        user_email: req.user?.email ?? null,
+        endpoint: 'search',
+        question,
+        lang: lang ?? null,
+        embedding_model: String(cfg.embedding_model),
+        params: { retrieval_limit: limit ?? cfg.retrieval_limit },
+        retrieved_count: results.length,
+        top_similarity: topSimilarity(chunks),
+        latency_ms: Date.now() - started,
+      });
       res.json({ question, count: results.length, results });
     } catch (err) {
       console.error('assistant/search error:', err);
+      logRagRequest({
+        user_id: req.user?.id ?? null,
+        user_email: req.user?.email ?? null,
+        endpoint: 'search',
+        question,
+        lang: lang ?? null,
+        latency_ms: Date.now() - started,
+        error: err instanceof Error ? err.message : String(err),
+      });
       res.status(502).json({ error: 'Search is temporarily unavailable.' });
     }
   }
@@ -113,17 +147,53 @@ router.post(
       lang?: 'en' | 'fr';
       mode?: 'articles' | 'general';
     };
+    const resolvedMode = mode ?? 'articles';
+    const started = Date.now();
+    const cfg = await getConfig();
 
     try {
       const { answer, grounded, chunks } = await answerQuestion(question, {
         lang: lang ?? null,
-        mode: mode ?? 'articles',
+        mode: resolvedMode,
       });
       // Only cite sources when the answer is actually grounded in them.
       const sources = grounded ? await distinctSources(chunks) : [];
+      logRagRequest({
+        user_id: req.user?.id ?? null,
+        user_email: req.user?.email ?? null,
+        endpoint: 'ask',
+        mode: resolvedMode,
+        question,
+        lang: lang ?? null,
+        embedding_model: String(cfg.embedding_model),
+        chat_model: String(cfg.chat_model),
+        params: {
+          context_chunks: cfg.context_chunks,
+          min_top_similarity: cfg.min_top_similarity,
+          answer_max_tokens: cfg.answer_max_tokens,
+          temperature: resolvedMode === 'general' ? cfg.general_temperature : cfg.grounded_temperature,
+        },
+        retrieved_count: chunks.length,
+        top_similarity: topSimilarity(chunks),
+        grounded,
+        // A refusal = articles mode that didn't ground its answer.
+        refused: resolvedMode === 'articles' && !grounded,
+        latency_ms: Date.now() - started,
+      });
       res.json({ question, answer, grounded, sources });
     } catch (err) {
       console.error('assistant/ask error:', err);
+      logRagRequest({
+        user_id: req.user?.id ?? null,
+        user_email: req.user?.email ?? null,
+        endpoint: 'ask',
+        mode: resolvedMode,
+        question,
+        lang: lang ?? null,
+        chat_model: String(cfg.chat_model),
+        latency_ms: Date.now() - started,
+        error: err instanceof Error ? err.message : String(err),
+      });
       res.status(502).json({ error: 'The assistant is temporarily unavailable.' });
     }
   }
@@ -135,11 +205,38 @@ router.post(
   '/product-advice',
   validate([body('question').notEmpty().trim().isLength({ min: 3, max: 400 })]),
   async (req, res) => {
+    const question = req.body.question as string;
+    const started = Date.now();
+    const cfg = await getConfig();
     try {
-      const { answer, productIds } = await adviseProducts(req.body.question as string);
+      const { answer, productIds } = await adviseProducts(question);
+      logRagRequest({
+        user_id: req.user?.id ?? null,
+        user_email: req.user?.email ?? null,
+        endpoint: 'product-advice',
+        question,
+        embedding_model: String(cfg.embedding_model),
+        chat_model: String(cfg.chat_model),
+        params: {
+          advisor_top_k: cfg.advisor_top_k,
+          advisor_min_similarity: cfg.advisor_min_similarity,
+          advisor_temperature: cfg.advisor_temperature,
+        },
+        retrieved_count: productIds.length,
+        grounded: productIds.length > 0,
+        latency_ms: Date.now() - started,
+      });
       res.json({ answer, productIds });
     } catch (err) {
       console.error('assistant/product-advice error:', err);
+      logRagRequest({
+        user_id: req.user?.id ?? null,
+        user_email: req.user?.email ?? null,
+        endpoint: 'product-advice',
+        question,
+        latency_ms: Date.now() - started,
+        error: err instanceof Error ? err.message : String(err),
+      });
       res.status(502).json({ error: 'The product advisor is temporarily unavailable.' });
     }
   }

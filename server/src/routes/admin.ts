@@ -4,11 +4,15 @@ import { supabaseAdmin } from '../config/supabase';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { reindexDoctor } from '../services/embeddings';
+import ragRouter from './adminRag';
 
 const router = Router();
 
 // Every route here requires an authenticated admin
 router.use(requireAuth, requireRole('admin'));
+
+// RAG admin console (config + request logs). Inherits the admin guard above.
+router.use('/rag', ragRouter);
 
 // GET /api/admin/doctors — list all doctors with subscription info
 router.get('/doctors', async (_req, res) => {

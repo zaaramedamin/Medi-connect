@@ -1,14 +1,13 @@
 import { getHfClient, withHfRetry } from './hfClient';
 import { supabaseAdmin } from '../config/supabase';
 import { embedQuery } from './embeddings';
+import { getConfig } from './ragConfig';
 import { PRODUCTS } from '../data/products';
 
-const CHAT_MODEL = process.env.HF_CHAT_MODEL || 'Qwen/Qwen2.5-7B-Instruct';
-
-// Products cluster fairly tightly, so this floor mainly guards the "nothing in
+// Model, top-k, similarity floor, max tokens and temperature are all runtime-
+// editable from the admin console (advisor_* keys in services/ragConfig.ts).
+// Products cluster fairly tightly, so the floor mainly guards the "nothing in
 // the shop fits" case; the prompt still recommends only from what's retrieved.
-const MIN_SIMILARITY = 0.75;
-const TOP_K = 5;
 
 const productById = new Map(PRODUCTS.map((p) => [p.id, p]));
 
@@ -23,15 +22,16 @@ export interface ProductAdvice {
  * product ids so the frontend can render the matching cards.
  */
 export async function adviseProducts(question: string): Promise<ProductAdvice> {
+  const cfg = await getConfig();
   const queryEmbedding = await embedQuery(question);
   const { data, error } = await supabaseAdmin.rpc('match_products', {
     query_embedding: JSON.stringify(queryEmbedding),
-    match_count: TOP_K,
+    match_count: Number(cfg.advisor_top_k),
   });
   if (error) throw new Error(`Product retrieval failed: ${error.message}`);
 
   const matches = ((data ?? []) as { id: string; similarity: number }[]).filter(
-    (m) => m.similarity >= MIN_SIMILARITY
+    (m) => m.similarity >= Number(cfg.advisor_min_similarity)
   );
   const products = matches
     .map((m) => productById.get(m.id))
@@ -66,13 +66,13 @@ export async function adviseProducts(question: string): Promise<ProductAdvice> {
   const hf = getHfClient();
   const completion = await withHfRetry(() =>
     hf.chatCompletion({
-      model: CHAT_MODEL,
+      model: String(cfg.chat_model),
       messages: [
         { role: 'system', content: system },
         { role: 'user', content: `Products:\n${context}\n\nWhat the shopper needs: ${question}` },
       ],
-      max_tokens: 400,
-      temperature: 0.4,
+      max_tokens: Number(cfg.advisor_max_tokens),
+      temperature: Number(cfg.advisor_temperature),
     })
   );
 
