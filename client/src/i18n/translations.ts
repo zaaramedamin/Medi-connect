@@ -501,6 +501,15 @@ const BASE: Record<string, string> = {
   'Date of birth is required': 'La date de naissance est obligatoire',
   'Date of birth cannot be in the future': 'La date de naissance ne peut pas être dans le futur',
 
+  // ── Session timeout ──────────────────────────────────────────────
+  'Still there?': 'Toujours là ?',
+  'For your security you will be signed out in {seconds} seconds.':
+    'Pour votre sécurité, vous serez déconnecté dans {seconds} secondes.',
+  'Sign out now': 'Se déconnecter maintenant',
+  'Stay signed in': 'Rester connecté',
+  'You were signed out after 30 minutes of inactivity.':
+    'Vous avez été déconnecté après 30 minutes d’inactivité.',
+
   // ── Medical records ──────────────────────────────────────────────
   // 'Patients' already defined (admin dashboard) — reused.
   'Open file': 'Ouvrir le dossier',

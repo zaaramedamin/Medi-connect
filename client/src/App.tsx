@@ -7,6 +7,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartDrawer } from '@/components/features/CartDrawer';
 import { HealthAssistant } from '@/components/features/HealthAssistant';
+import { SessionTimeout } from '@/components/features/SessionTimeout';
 import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 import { useAuthStore } from '@/stores/authStore';
@@ -96,6 +97,7 @@ function AppRoutes() {
       <ScrollProgress />
       <Header />
       <CartDrawer />
+      <SessionTimeout />
       <Toaster richColors position="top-center" />
       <main className="flex-1">
         <AnimatePresence mode="wait" initial={false}>
