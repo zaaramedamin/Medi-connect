@@ -3,6 +3,8 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import { apiRateLimit, assistantRateLimit } from './middleware/rateLimit';
+import { requestLog } from './middleware/requestLog';
+import { logger, captureError } from './services/logger';
 import doctorRoutes from './routes/doctors';
 import appointmentRoutes from './routes/appointments';
 import uploadRoutes from './routes/uploads';
@@ -53,6 +55,9 @@ app.use(
 app.use(express.json({ limit: '10mb' })); // 10 MB to support base64 photo uploads
 app.use(express.urlencoded({ extended: true }));
 
+// Structured request logging (request-id + timing, no bodies — PHI-safe)
+app.use(requestLog);
+
 // Global rate limit
 app.use('/api', apiRateLimit);
 
@@ -68,8 +73,17 @@ app.use('/api/profile', profileRoutes);
 app.use('/api/records', recordRoutes);
 app.use('/api/assistant', assistantRateLimit, assistantRoutes);
 
-// Health check
-app.get('/health', (_req, res) => res.json({ status: 'ok' }));
+// Health check — enough for an uptime monitor to alert on and to confirm which
+// build is live.
+const STARTED_AT = Date.now();
+app.get('/health', (_req, res) =>
+  res.json({
+    status: 'ok',
+    uptime_s: Math.round((Date.now() - STARTED_AT) / 1000),
+    version: process.env.npm_package_version ?? 'dev',
+    time: new Date().toISOString(),
+  })
+);
 
 // External-cron hook for reminders. On hosts whose free tiers sleep idle
 // services, the in-process interval below never fires — point a scheduler
@@ -86,15 +100,21 @@ app.post('/api/jobs/reminders', async (req, res) => {
 // 404 handler
 app.use((_req, res) => res.status(404).json({ error: 'Not found' }));
 
-// Global error handler
-app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-  console.error(err);
-  res.status(500).json({ error: 'Internal server error' });
+// Global error handler — logs with the request id and returns it so a user can
+// quote it in a report without the server leaking internals.
+app.use((err: Error, req: express.Request, res: express.Response, _next: express.NextFunction) => {
+  captureError(err, { id: req.id, method: req.method, path: req.path, user: req.user?.id });
+  res.status(500).json({ error: 'Internal server error', request_id: req.id });
 });
+
+// Last-resort guards: an unhandled rejection or exception should be logged
+// structured, not crash silently.
+process.on('unhandledRejection', reason => captureError(reason, { kind: 'unhandledRejection' }));
+process.on('uncaughtException', err => captureError(err, { kind: 'uncaughtException' }));
 
 const PORT = process.env.PORT ?? 3000;
 app.listen(PORT, () => {
-  console.log(`MediConnect API running on port ${PORT}`);
+  logger.info('API started', { port: Number(PORT), version: process.env.npm_package_version ?? 'dev' });
 
   // Appointment reminders: check once on boot, then every 15 minutes.
   // No-ops until a real RESEND_API_KEY is set. Deduped via reminder_logs.
