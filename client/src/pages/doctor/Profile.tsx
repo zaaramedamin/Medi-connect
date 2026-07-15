@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useState } from 'react';
 import {
   MapPin, Clock, Calendar, MessageSquare, BadgeCheck, Phone, Mail, Globe,
-  Award, Stethoscope, Building2, Languages, Star, Quote, CalendarCheck,
+  Award, Stethoscope, Building2, Languages, Star, Quote, CalendarCheck, Video,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -20,7 +20,7 @@ import { useT } from '@/i18n';
 import { toast } from 'sonner';
 import { cn, formatDate, formatTime, initialsOf, splitName } from '@/lib/utils';
 import { isProfileComplete, missingProfileFields, REQUIRED_FIELD_LABELS } from '@/lib/patientProfile';
-import type { Doctor, ClinicPost, Review } from '@/types';
+import type { Doctor, ClinicPost, Review, ConsultationMode } from '@/types';
 
 // ── Building blocks ──────────────────────────────────────────────────
 
@@ -256,6 +256,7 @@ export default function DoctorProfile() {
 
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'cash' | 'online'>('cash');
+  const [mode, setMode] = useState<ConsultationMode>('in_person');
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const { data: doctor, isLoading } = useQuery({
@@ -280,7 +281,7 @@ export default function DoctorProfile() {
   });
 
   const bookMutation = useMutation({
-    mutationFn: () => bookAppointment(id!, selectedSlot!, paymentMethod),
+    mutationFn: () => bookAppointment(id!, selectedSlot!, paymentMethod, mode),
     onSuccess: () => {
       setConfirmOpen(false);
       toast.success(t('Appointment confirmed.'), {
@@ -529,6 +530,30 @@ export default function DoctorProfile() {
                 <p><span className="font-medium">{t('Doctor')}:</span> {doctor.name}</p>
                 <p><span className="font-medium">{t('Date')}:</span> {formatDate(selectedSlot)}</p>
                 <p><span className="font-medium">{t('Time')}:</span> {formatTime(selectedSlot)}</p>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-medium">{t('Consultation type')}</p>
+                <div className="flex gap-2">
+                  {([
+                    { key: 'in_person', label: t('In person'), icon: MapPin },
+                    { key: 'video', label: t('Video call'), icon: Video },
+                  ] as const).map(({ key, label, icon: Icon }) => (
+                    <button
+                      key={key}
+                      type="button"
+                      onClick={() => setMode(key)}
+                      className={cn(
+                        'flex flex-1 items-center justify-center gap-1.5 rounded-md border py-2 text-sm transition-colors',
+                        mode === key
+                          ? 'border-primary bg-primary/5 font-medium text-primary'
+                          : 'text-muted-foreground hover:border-primary/50'
+                      )}
+                    >
+                      <Icon className="h-4 w-4" />{label}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div>

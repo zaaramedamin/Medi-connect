@@ -21,6 +21,40 @@ const router = Router();
 
 const ipOf = (req: Request) => (req.headers['x-forwarded-for'] as string)?.split(',')[0]?.trim() ?? req.ip ?? null;
 
+// ── Public document verification (NO auth, NO PHI) ───────────────────
+// A pharmacist or employer holding a printed document scans its QR / types its
+// reference to confirm it is genuine and current. References are sequential and
+// therefore guessable, so this returns ONLY authenticity facts — issuing doctor,
+// type, date, valid/revoked — and NEVER the patient or any clinical content.
+// The person already holds the paper; this just confirms it wasn't forged or
+// revoked.
+router.get('/verify/:reference', async (req, res) => {
+  const reference = String(req.params.reference).trim().toUpperCase();
+  const { data: doc } = await supabaseAdmin
+    .from('medical_documents')
+    .select('reference, type, issued_at, revoked_at, doctor_id')
+    .eq('reference', reference)
+    .maybeSingle();
+
+  if (!doc) return res.json({ found: false });
+
+  const { data: doctor } = await supabaseAdmin
+    .from('doctors')
+    .select('name, specialty')
+    .eq('id', doc.doctor_id)
+    .maybeSingle();
+
+  res.json({
+    found: true,
+    reference: doc.reference,
+    type: doc.type,
+    issued_at: doc.issued_at,
+    status: doc.revoked_at ? 'revoked' : 'valid',
+    doctor_name: doctor?.name ?? null,
+    doctor_specialty: doctor?.specialty ?? null,
+  });
+});
+
 // ── Doctor: the patients this doctor has seen ────────────────────────
 router.get('/patients', requireAuth, requireRole('doctor'), async (req, res) => {
   const doctorId = req.user!.id;

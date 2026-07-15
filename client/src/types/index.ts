@@ -46,6 +46,8 @@ export interface Review {
   patient_name: string;
 }
 
+export type ConsultationMode = 'in_person' | 'video';
+
 export interface Appointment {
   id: number;
   doctor_id: string;
@@ -54,8 +56,18 @@ export interface Appointment {
   status: 'confirmed' | 'cancelled' | 'completed';
   payment_method: 'cash' | 'online';
   payment_status: 'pending' | 'paid';
+  mode?: ConsultationMode;
   created_at: string;
   doctors?: Pick<Doctor, 'id' | 'name' | 'specialty' | 'location' | 'photos_url'>;
+}
+
+/** The video room details for one appointment's two participants. */
+export interface CallRoom {
+  domain: string;
+  room: string;
+  display_name: string;
+  is_moderator: boolean;
+  closes_at: string;
 }
 
 export interface TimeSlot {
@@ -278,6 +290,17 @@ export interface PatientFile {
   chart: PatientChart | null;
   consultations: Consultation[];
   documents: DocumentSummary[];
+}
+
+/** Public authenticity check — deliberately carries no patient/clinical data. */
+export interface DocumentVerification {
+  found: boolean;
+  reference?: string;
+  type?: DocumentType;
+  issued_at?: string;
+  status?: 'valid' | 'revoked';
+  doctor_name?: string | null;
+  doctor_specialty?: string | null;
 }
 
 // ── Shop orders (demo checkout — no payment) ─────────────────────────

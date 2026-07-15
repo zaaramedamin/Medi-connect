@@ -3,7 +3,7 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useRef, useEffect } from 'react';
-import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2, Building2, Plus, X, Contact, FolderOpenDot, FileText, ChevronRight } from 'lucide-react';
+import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2, Building2, Plus, X, Contact, FolderOpenDot, FileText, ChevronRight, Video } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -422,6 +422,11 @@ export default function DoctorDashboard() {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center justify-end gap-2">
+                            {apt.mode === 'video' && apt.status === 'confirmed' && (
+                              <Button asChild size="sm">
+                                <Link to={`/call/${apt.id}`}><Video className="h-4 w-4 mr-1.5" /> {t('Join call')}</Link>
+                              </Button>
+                            )}
                             {canComplete && (
                               <Button
                                 size="sm" variant="outline"

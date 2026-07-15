@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, MapPin, Clock, Search, Star, Package, FileText, FileSignature } from 'lucide-react';
+import { CalendarDays, MapPin, Clock, Search, Star, Package, FileText, FileSignature, Video } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -252,6 +252,12 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
             {doc?.location && <span className="flex items-center gap-1"><MapPin className="h-4 w-4" />{doc.location}</span>}
           </div>
         </div>
+
+        {apt.mode === 'video' && apt.status === 'confirmed' && (
+          <Button asChild size="sm" className="shrink-0 self-center">
+            <Link to={`/call/${apt.id}`}><Video className="mr-1.5 h-4 w-4" />{t('Join video call')}</Link>
+          </Button>
+        )}
 
         {onCancel && apt.status === 'confirmed' && (
           <Button variant="outline" size="sm" onClick={onCancel} disabled={cancelling} className="shrink-0 self-center">

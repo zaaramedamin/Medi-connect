@@ -1,12 +1,13 @@
 import { supabase } from '@/lib/supabase';
 import type {
-  Doctor, ClinicPostDraft, Appointment, TimeSlot, Review, AdminDoctor, NewDoctorInput,
+  Doctor, ClinicPostDraft, Appointment, ConsultationMode, CallRoom, TimeSlot, Review, AdminDoctor, NewDoctorInput,
   Article, ArticleDetail, ArticleComment, NewArticleInput,
   AdminStats, AdminPatient, Order, OrderItem, AdminOrder,
   PatientProfile, PatientProfileInput,
   RagParam, RagLogRow, RagStats,
   DoctorPatient, PatientFile, PatientChart, PatientChartInput,
   Consultation, ConsultationInput, DocumentType, MedicalDocument, DocumentSummary,
+  DocumentVerification,
 } from '@/types';
 
 // In dev this is empty and Vite proxies /api → localhost. In production set
@@ -88,11 +89,17 @@ export const deleteDoctorAccount = () =>
   apiFetch('/api/doctors/account', { method: 'DELETE' });
 
 // Appointments
-export const bookAppointment = (doctor_id: string, time_slot: string, payment_method: 'cash' | 'online') =>
+export const bookAppointment = (
+  doctor_id: string, time_slot: string, payment_method: 'cash' | 'online',
+  mode: ConsultationMode = 'in_person'
+) =>
   apiFetch<Appointment>('/api/appointments', {
     method: 'POST',
-    body: JSON.stringify({ doctor_id, time_slot, payment_method }),
+    body: JSON.stringify({ doctor_id, time_slot, payment_method, mode }),
   });
+
+export const getCallRoom = (appointmentId: number) =>
+  apiFetch<CallRoom>(`/api/appointments/${appointmentId}/call`);
 
 export const getMyAppointments = () =>
   apiFetch<Appointment[]>('/api/appointments/my');
@@ -165,6 +172,10 @@ export const getDocument = (id: number) =>
 
 export const getMyDocuments = () =>
   apiFetch<DocumentSummary[]>('/api/records/me/documents');
+
+/** Public — confirms a document is genuine and current. No PHI returned. */
+export const verifyDocument = (reference: string) =>
+  apiFetch<DocumentVerification>(`/api/records/verify/${encodeURIComponent(reference)}`);
 
 export const getAdminStats = () => apiFetch<AdminStats>('/api/admin/stats');
 

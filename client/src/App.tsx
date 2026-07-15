@@ -12,6 +12,7 @@ import { ScrollProgress } from '@/components/ui/scroll-progress';
 import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 import { useAuthStore } from '@/stores/authStore';
 import { useAuthInit } from '@/hooks/useAuth';
+import { useRealtimeAppointments } from '@/hooks/useRealtimeAppointments';
 import { I18nProvider } from '@/i18n';
 
 const Home = lazy(() => import('@/pages/Home'));
@@ -31,6 +32,8 @@ const CommunityArticle = lazy(() => import('@/pages/community/Article'));
 const NewArticle = lazy(() => import('@/pages/community/NewArticle'));
 const PatientFile = lazy(() => import('@/pages/records/PatientFile'));
 const MedicalDocument = lazy(() => import('@/pages/records/Document'));
+const Verify = lazy(() => import('@/pages/records/Verify'));
+const Call = lazy(() => import('@/pages/Call'));
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
@@ -68,6 +71,8 @@ const PAGE_TITLES: [string, string][] = [
   ['/register', 'Create an account'],
   ['/records/document/', 'Medical document'],
   ['/records/patient/', 'Patient file'],
+  ['/verify', 'Verify a document'],
+  ['/call/', 'Video consultation'],
   ['/doctor/', 'Doctor profile'],
   ['/login', 'Sign in'],
   ['/admin', 'Admin dashboard'],
@@ -76,6 +81,7 @@ const PAGE_TITLES: [string, string][] = [
 
 function AppRoutes() {
   useAuthInit();
+  useRealtimeAppointments();
   const location = useLocation();
 
   useEffect(() => {
@@ -127,6 +133,8 @@ function AppRoutes() {
                   element={<ProtectedRoute role={['doctor', 'admin']}><NewArticle /></ProtectedRoute>}
                 />
                 <Route path="/community/:id" element={<CommunityArticle />} />
+                <Route path="/verify" element={<Verify />} />
+                <Route path="/verify/:reference" element={<Verify />} />
                 <Route path="/doctor/:id" element={<DoctorProfile />} />
                 <Route
                   path="/records/patient/:patientId"
@@ -135,6 +143,10 @@ function AppRoutes() {
                 <Route
                   path="/records/document/:id"
                   element={<ProtectedRoute role={['doctor', 'patient']}><MedicalDocument /></ProtectedRoute>}
+                />
+                <Route
+                  path="/call/:appointmentId"
+                  element={<ProtectedRoute role={['doctor', 'patient']}><Call /></ProtectedRoute>}
                 />
                 <Route
                   path="/patient/dashboard"

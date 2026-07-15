@@ -1,11 +1,24 @@
+import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import QRCode from 'qrcode';
 import { Printer, ArrowLeft, ShieldAlert, Stethoscope } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { getDocument } from '@/services/api';
 import { useT } from '@/i18n';
 import { formatDate } from '@/lib/utils';
 import type { Medication } from '@/types';
+
+/** Encodes the public verification URL for a document reference as a QR data URL. */
+function useVerifyQr(reference: string | undefined): string | null {
+  const [qr, setQr] = useState<string | null>(null);
+  useEffect(() => {
+    if (!reference) return;
+    const url = `${window.location.origin}/verify/${encodeURIComponent(reference)}`;
+    QRCode.toDataURL(url, { margin: 1, width: 160 }).then(setQr).catch(() => setQr(null));
+  }, [reference]);
+  return qr;
+}
 
 const TYPE_LABEL: Record<string, string> = {
   report: 'Consultation report',
@@ -25,6 +38,9 @@ export default function DocumentView() {
     enabled: !!id,
     retry: false,
   });
+
+  // Called unconditionally (rules of hooks); no-ops until the reference loads.
+  const qr = useVerifyQr(doc?.content?.reference);
 
   if (isLoading) {
     return <div className="container flex justify-center py-16"><span className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" /></div>;
@@ -101,9 +117,18 @@ export default function DocumentView() {
           {c.type === 'report' && <Report summary={String(body.summary ?? '')} diagnosis={c.consultation.diagnosis} t={t} />}
         </main>
 
-        {/* Signature */}
-        <footer className="mt-12 flex items-end justify-between">
-          <p className="text-xs text-zinc-400">{t('Issued via MediConnect')} · {c.reference}</p>
+        {/* Signature + verification QR */}
+        <footer className="mt-12 flex items-end justify-between gap-6">
+          <div className="flex items-end gap-3">
+            {qr && (
+              <img src={qr} alt="" width={72} height={72} className="rounded border border-zinc-200" />
+            )}
+            <div className="text-xs text-zinc-400">
+              <p className="font-medium text-zinc-500">{t('Verify this document')}</p>
+              <p>{t('Scan, or visit {url}', { url: `${window.location.host}/verify` })}</p>
+              <p className="font-mono">{c.reference}</p>
+            </div>
+          </div>
           <div className="text-center">
             <div className="mb-1 h-12 w-48 border-b border-zinc-400" />
             <p className="text-sm font-semibold">{c.doctor.name}</p>

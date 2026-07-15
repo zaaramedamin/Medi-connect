@@ -501,6 +501,40 @@ const BASE: Record<string, string> = {
   'Date of birth is required': 'La date de naissance est obligatoire',
   'Date of birth cannot be in the future': 'La date de naissance ne peut pas être dans le futur',
 
+  // ── Telemedicine (video consultations) ───────────────────────────
+  'Consultation type': 'Type de consultation',
+  'In person': 'En personne',
+  'Video call': 'Téléconsultation',
+  'Join video call': 'Rejoindre la téléconsultation',
+  'Join call': 'Rejoindre',
+  'Video consultation': 'Téléconsultation',
+  'Connecting to your consultation…': 'Connexion à votre consultation…',
+  'The video failed to load. Check your connection and try again.':
+    'La vidéo n’a pas pu se charger. Vérifiez votre connexion et réessayez.',
+  'Can’t join this call': 'Impossible de rejoindre cet appel',
+  'The call isn’t open yet': 'L’appel n’est pas encore ouvert',
+  'You can join from {time}.': 'Vous pourrez rejoindre à partir de {time}.',
+  'Please come back closer to your appointment time.':
+    'Revenez à l’approche de l’heure de votre rendez-vous.',
+
+  // ── Document verification ────────────────────────────────────────
+  'Verify a medical document': 'Vérifier un document médical',
+  'Verify this document': 'Vérifier ce document',
+  'Confirm a MediConnect document is genuine. Enter its reference or scan its QR code.':
+    'Confirmez l’authenticité d’un document MediConnect. Saisissez sa référence ou scannez son QR code.',
+  'Scan, or visit {url}': 'Scannez, ou rendez-vous sur {url}',
+  'Could not check right now': 'Vérification impossible pour le moment',
+  'Please try again in a moment.': 'Veuillez réessayer dans un instant.',
+  'No such document': 'Document introuvable',
+  'No document with reference {ref} was issued by MediConnect.':
+    'Aucun document portant la référence {ref} n’a été émis par MediConnect.',
+  'This document has been revoked': 'Ce document a été révoqué',
+  'It was issued but is no longer valid.': 'Il a été émis mais n’est plus valide.',
+  'Genuine and valid': 'Authentique et valide',
+  'This document was issued by MediConnect and has not been revoked.':
+    'Ce document a été émis par MediConnect et n’a pas été révoqué.',
+  'Issued by': 'Émis par',
+
   // ── Session timeout ──────────────────────────────────────────────
   'Still there?': 'Toujours là ?',
   'For your security you will be signed out in {seconds} seconds.':

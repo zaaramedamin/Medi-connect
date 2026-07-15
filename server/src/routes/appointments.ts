@@ -5,8 +5,28 @@ import { requireAuth, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { sendAppointmentConfirmation } from '../services/emailService';
 import { missingProfileFields } from '../services/patientProfile';
+import { roomForAppointment, callWindow, JITSI_DOMAIN } from '../services/videoRoom';
 
 const router = Router();
+
+// Whether the appointments.mode column exists yet (seed/telemedicine.sql applied).
+// Probed once and cached, so booking and appointment lists keep working before
+// the migration is run — same resilience the map columns get in doctors.ts.
+let hasModeColumn: boolean | null = null;
+async function modeColumnExists(): Promise<boolean> {
+  if (hasModeColumn !== null) return hasModeColumn;
+  try {
+    // Pre-migration, PostgREST returns an error object (not a throw) for the
+    // unknown column, so !error correctly reports false.
+    const { error } = await supabaseAdmin.from('appointments').select('mode').limit(1);
+    hasModeColumn = !error;
+  } catch {
+    // Probe genuinely unavailable (transient, or a stubbed client) — assume the
+    // column is present, which is the post-migration production state.
+    hasModeColumn = true;
+  }
+  return hasModeColumn;
+}
 
 // POST /api/appointments — book an appointment (patient only)
 router.post(
@@ -17,9 +37,10 @@ router.post(
     body('doctor_id').notEmpty().trim().escape(),
     body('time_slot').isISO8601().toDate(),
     body('payment_method').isIn(['cash', 'online']),
+    body('mode').optional().isIn(['in_person', 'video']),
   ]),
   async (req, res) => {
-    const { doctor_id, time_slot, payment_method } = req.body;
+    const { doctor_id, time_slot, payment_method, mode = 'in_person' } = req.body;
     const patientId = req.user!.id;
 
     // A doctor can't work with a booking they can't attach a phone number or an
@@ -68,6 +89,9 @@ router.post(
         user_id: patientId,
         time_slot: slot,
         payment_method,
+        // Only send mode once the column exists; before the migration, a video
+        // request quietly falls back to in-person rather than failing the booking.
+        ...((await modeColumnExists()) ? { mode } : {}),
         status: 'confirmed',
         payment_status: 'pending',
       })
@@ -109,12 +133,16 @@ router.post(
 
 // GET /api/appointments/my — patient's own appointments
 router.get('/my', requireAuth, requireRole('patient'), async (req, res) => {
+  // A plain string (not a literal) so supabase-js doesn't type-parse the
+  // conditional column; result is cast below.
+  const columns: string = `
+    id, time_slot, status, payment_method, payment_status, created_at,
+    ${(await modeColumnExists()) ? 'mode,' : ''}
+    doctors (id, name, specialty, location, photos_url)
+  `;
   const { data, error } = await supabaseAdmin
     .from('appointments')
-    .select(`
-      id, time_slot, status, payment_method, payment_status, created_at,
-      doctors (id, name, specialty, location, photos_url)
-    `)
+    .select(columns)
     .eq('user_id', req.user!.id)
     .order('time_slot', { ascending: false });
 
@@ -124,17 +152,19 @@ router.get('/my', requireAuth, requireRole('patient'), async (req, res) => {
 
 // GET /api/appointments/doctor — all of the doctor's appointments (newest first)
 router.get('/doctor', requireAuth, requireRole('doctor'), async (req, res) => {
+  const columns: string = `id, time_slot, status, payment_method, payment_status, user_id${(await modeColumnExists()) ? ', mode' : ''}`;
   const { data, error } = await supabaseAdmin
     .from('appointments')
-    .select('id, time_slot, status, payment_method, payment_status, user_id')
+    .select(columns)
     .eq('doctor_id', req.user!.id)
     .order('time_slot', { ascending: false });
 
   if (error) return res.status(500).json({ error: 'Failed to fetch appointments' });
 
   // Enrich with patient info from auth.users
+  const rows = (data ?? []) as unknown as { user_id: string }[];
   const enriched = await Promise.all(
-    (data ?? []).map(async apt => {
+    rows.map(async apt => {
       const { data: userData } = await supabaseAdmin.auth.admin.getUserById(apt.user_id);
       return {
         ...apt,
@@ -199,6 +229,45 @@ router.patch('/:id/complete', requireAuth, requireRole('doctor'), async (req, re
 
   if (error) return res.status(500).json({ error: 'Failed to complete appointment' });
   res.json(data);
+});
+
+// GET /api/appointments/:id/call — the video room, for the two participants only.
+// The room name is never stored or listed; it is minted here and returned only
+// to the appointment's doctor or patient, and only within the call window.
+router.get('/:id/call', requireAuth, async (req, res) => {
+  const { data: apt } = await supabaseAdmin
+    .from('appointments')
+    .select('id, doctor_id, user_id, time_slot, status, mode')
+    .eq('id', req.params.id)
+    .single();
+
+  if (!apt) return res.status(404).json({ error: 'Appointment not found' });
+
+  const isParticipant = apt.user_id === req.user!.id || apt.doctor_id === req.user!.id;
+  if (!isParticipant) return res.status(403).json({ error: 'Forbidden' });
+  if (apt.mode !== 'video') return res.status(400).json({ error: 'This is not a video appointment' });
+  if (apt.status === 'cancelled') return res.status(400).json({ error: 'This appointment was cancelled' });
+
+  const window = callWindow(apt.time_slot);
+  if (!window.open) {
+    return res.status(403).json({
+      error: 'The call room is not open yet.',
+      code: 'CALL_NOT_OPEN',
+      opens_at: window.opensAt.toISOString(),
+      closes_at: window.closesAt.toISOString(),
+    });
+  }
+
+  // The doctor is the moderator; label each participant so the other sees who
+  // joined. Names come from auth metadata, never anything clinical.
+  const isDoctor = apt.doctor_id === req.user!.id;
+  res.json({
+    domain: JITSI_DOMAIN,
+    room: roomForAppointment(apt.id),
+    display_name: (req.user!.email ?? '').split('@')[0],
+    is_moderator: isDoctor,
+    closes_at: window.closesAt.toISOString(),
+  });
 });
 
 export default router;

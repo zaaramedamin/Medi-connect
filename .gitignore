@@ -172,3 +172,6 @@ dist/
 # keep only the root README.md tracked in git.
 *.md
 !/README.md
+
+# graphify knowledge-graph output (generated)
+graphify-out/
