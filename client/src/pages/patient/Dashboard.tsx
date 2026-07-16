@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { CalendarDays, MapPin, Clock, Search, Star, Package, FileText, FileSignature, Video } from 'lucide-react';
+import { CalendarDays, MapPin, Clock, Search, Star, Package, FileText, FileSignature, Video, Ban, AlertTriangle } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { StarInput } from '@/components/ui/star-rating';
-import { getMyAppointments, cancelAppointment, createReview, getMyOrders, getMyDocuments } from '@/services/api';
+import { getMyAppointments, cancelAppointment, createReview, getMyOrders, getMyDocuments, getMyPenalty } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { useConfirm } from '@/components/ui/confirm-dialog';
@@ -21,7 +21,11 @@ const statusVariant: Record<string, 'success' | 'destructive' | 'secondary'> = {
   confirmed: 'success',
   cancelled: 'destructive',
   completed: 'secondary',
+  no_show: 'destructive',
 };
+
+// English-facing label for a status (the i18n key). 'no_show' -> 'missed'.
+const statusLabel = (status: string) => (status === 'no_show' ? 'missed' : status);
 
 const orderStatusVariant: Record<string, 'success' | 'destructive' | 'secondary'> = {
   placed: 'secondary',
@@ -85,6 +89,8 @@ export default function PatientDashboard() {
           <p className="text-muted-foreground">{t('Manage your appointments')}</p>
         </div>
       </div>
+
+      <BanBanner />
 
       {isLoading ? (
         <div className="space-y-4">
@@ -167,6 +173,51 @@ export default function PatientDashboard() {
   );
 }
 
+function BanBanner() {
+  const t = useT();
+  const { data: penalty } = useQuery({ queryKey: ['my-penalty'], queryFn: getMyPenalty });
+  if (!penalty) return null;
+
+  if (penalty.blacklisted) {
+    return (
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+        <Ban className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+        <div>
+          <p className="font-semibold text-destructive">{t('Your account is blacklisted')}</p>
+          <p className="text-sm text-muted-foreground">{t('You can no longer book appointments after repeated missed visits. Contact support if you think this is a mistake.')}</p>
+        </div>
+      </div>
+    );
+  }
+  if (penalty.is_banned) {
+    return (
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-destructive/40 bg-destructive/5 p-4">
+        <Ban className="mt-0.5 h-5 w-5 shrink-0 text-destructive" />
+        <div>
+          <p className="font-semibold text-destructive">{t('Booking temporarily suspended')}</p>
+          <p className="text-sm text-muted-foreground">
+            {penalty.banned_until
+              ? t('You missed appointments, so you can’t book until {date}.', { date: `${formatDate(penalty.banned_until)} ${formatTime(penalty.banned_until)}` })
+              : t('You missed appointments and are temporarily blocked from booking.')}
+          </p>
+        </div>
+      </div>
+    );
+  }
+  if (penalty.total_missed > 0) {
+    return (
+      <div className="mb-6 flex items-start gap-3 rounded-xl border border-amber-500/40 bg-amber-500/5 p-4">
+        <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+        <div>
+          <p className="font-semibold text-amber-700">{t('Please don’t miss appointments')}</p>
+          <p className="text-sm text-muted-foreground">{t('You have missed {n} appointment(s). Cancel at least 2 hours ahead if you can’t attend — a second miss leads to a temporary booking ban.', { n: penalty.total_missed })}</p>
+        </div>
+      </div>
+    );
+  }
+  return null;
+}
+
 function MyDocuments() {
   const t = useT();
   const { data: documents } = useQuery({ queryKey: ['records', 'me', 'documents'], queryFn: getMyDocuments });
@@ -244,7 +295,7 @@ function AppointmentCard({ appointment: apt, onCancel, cancelling }: {
               <p className="font-semibold">{doc?.name ?? 'Unknown Doctor'}</p>
               {doc?.specialty && <p className="text-sm text-muted-foreground">{doc.specialty}</p>}
             </div>
-            <Badge variant={statusVariant[apt.status] ?? 'outline'} className="shrink-0 capitalize">{t(apt.status)}</Badge>
+            <Badge variant={statusVariant[apt.status] ?? 'outline'} className="shrink-0 capitalize">{t(statusLabel(apt.status))}</Badge>
           </div>
           <div className="flex flex-wrap gap-4 mt-3 text-sm text-muted-foreground">
             <span className="flex items-center gap-1"><CalendarDays className="h-4 w-4" />{formatDate(apt.time_slot)}</span>

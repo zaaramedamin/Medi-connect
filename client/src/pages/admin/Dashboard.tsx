@@ -21,8 +21,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import {
   getAdminDoctors, createDoctor, updateDoctor, setDoctorSubscription, deleteDoctor,
   getAdminStats, getAdminPatients, deletePatient, getArticles, deleteArticle,
-  getAdminOrders, setOrderStatus,
+  getAdminOrders, setOrderStatus, liftPatientBan, removePatientBlacklist,
 } from '@/services/api';
+import { PenaltyFlag } from '@/components/features/PenaltyFlag';
 import type { AdminDoctor, Order } from '@/types';
 import { ARTICLE_CATEGORY_META } from '@/data/articleMeta';
 import { formatDT } from '@/data/products';
@@ -452,6 +453,18 @@ function PatientsTab() {
     onError: (e: Error) => toast.error(e.message),
   });
 
+  const liftBanMutation = useMutation({
+    mutationFn: liftPatientBan,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'patients'] }); toast.success(t('Ban lifted. The patient can book again.')); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const unblacklistMutation = useMutation({
+    mutationFn: removePatientBlacklist,
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin', 'patients'] }); toast.success(t('Blacklist removed.')); },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
   if (isLoading) return <div className="space-y-3">{[...Array(4)].map((_, i) => <div key={i} className="h-16 rounded-xl bg-muted animate-pulse" />)}</div>;
 
   return (
@@ -466,13 +479,36 @@ function PatientsTab() {
                 <AvatarFallback className="bg-secondary text-sm font-bold text-secondary-foreground">{initials}</AvatarFallback>
               </Avatar>
               <div className="min-w-0 flex-1">
-                <p className="truncate font-semibold">{p.name}</p>
+                <div className="flex items-center gap-1.5">
+                  <p className="truncate font-semibold">{p.name}</p>
+                  <PenaltyFlag penalty={p.penalty} />
+                </div>
                 <p className="truncate text-sm text-muted-foreground">{p.email}</p>
               </div>
               <div className="mr-2 text-right text-sm">
                 <p className="font-medium">{p.appointments} {t(p.appointments !== 1 ? 'bookings' : 'booking')}</p>
                 <p className="text-xs text-muted-foreground">{t('joined')} {formatDate(p.created_at)}</p>
               </div>
+              {p.penalty?.is_banned && (
+                <Button variant="outline" size="sm" onClick={() => liftBanMutation.mutate(p.id)} disabled={liftBanMutation.isPending}>
+                  <ShieldCheck className="mr-1.5 h-4 w-4" />{t('Lift ban')}
+                </Button>
+              )}
+              {p.penalty?.blacklisted && (
+                <Button
+                  variant="outline" size="sm"
+                  onClick={async () => {
+                    const ok = await askConfirm({
+                      title: t('Remove blacklist for {name}?', { name: p.name }),
+                      description: t('They will be able to book again. Their miss history is reset.'),
+                    });
+                    if (ok) unblacklistMutation.mutate(p.id);
+                  }}
+                  disabled={unblacklistMutation.isPending}
+                >
+                  <ShieldCheck className="mr-1.5 h-4 w-4" />{t('Remove blacklist')}
+                </Button>
+              )}
               <Button
                 variant="ghost" size="icon" className="text-destructive hover:text-destructive"
                 onClick={async () => {

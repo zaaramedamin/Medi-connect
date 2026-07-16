@@ -6,6 +6,7 @@ import { validate } from '../middleware/validate';
 import { sendAppointmentConfirmation } from '../services/emailService';
 import { missingProfileFields } from '../services/patientProfile';
 import { roomForAppointment, callWindow, JITSI_DOMAIN } from '../services/videoRoom';
+import { bookingBlock, recordStrike, getPenalties, LATE_CANCEL_HOURS } from '../services/patientLimits';
 
 const router = Router();
 
@@ -42,6 +43,13 @@ router.post(
   async (req, res) => {
     const { doctor_id, time_slot, payment_method, mode = 'in_person' } = req.body;
     const patientId = req.user!.id;
+
+    // Reliability gate: a blacklisted or temporarily-banned patient can't book
+    // anywhere on the platform. Checked first — it's the most fundamental block.
+    const block = await bookingBlock(patientId);
+    if (block) {
+      return res.status(403).json({ error: block.message, code: block.code, until: block.until });
+    }
 
     // A doctor can't work with a booking they can't attach a phone number or an
     // age to. The client sends the patient to /settings before they get here,
@@ -161,15 +169,21 @@ router.get('/doctor', requireAuth, requireRole('doctor'), async (req, res) => {
 
   if (error) return res.status(500).json({ error: 'Failed to fetch appointments' });
 
-  // Enrich with patient info from auth.users
+  // Enrich with patient info from auth.users and each patient's reliability flag,
+  // so the doctor can see who has missed appointments before.
   const rows = (data ?? []) as unknown as { user_id: string }[];
+  const penalties = await getPenalties([...new Set(rows.map(r => r.user_id))]);
   const enriched = await Promise.all(
     rows.map(async apt => {
       const { data: userData } = await supabaseAdmin.auth.admin.getUserById(apt.user_id);
+      const p = penalties.get(apt.user_id);
       return {
         ...apt,
         patient_name: userData.user?.user_metadata?.name ?? 'Unknown',
         patient_email: userData.user?.email ?? '',
+        patient_penalty: p
+          ? { total_missed: p.total_missed, is_banned: p.is_banned, blacklisted: p.blacklisted, banned_until: p.banned_until }
+          : null,
       };
     })
   );
@@ -181,7 +195,7 @@ router.get('/doctor', requireAuth, requireRole('doctor'), async (req, res) => {
 router.patch('/:id/cancel', requireAuth, async (req, res) => {
   const { data: existing } = await supabaseAdmin
     .from('appointments')
-    .select('user_id, doctor_id, status')
+    .select('user_id, doctor_id, status, time_slot')
     .eq('id', req.params.id)
     .single();
 
@@ -200,6 +214,15 @@ router.patch('/:id/cancel', requireAuth, async (req, res) => {
     .single();
 
   if (error) return res.status(500).json({ error: 'Failed to cancel appointment' });
+
+  // A patient cancelling within LATE_CANCEL_HOURS of the slot wastes it — that's
+  // a strike. Cancelling earlier, or a doctor cancelling, is always free.
+  const cancelledByPatient = existing.user_id === req.user!.id;
+  const lateThreshold = new Date(existing.time_slot).getTime() - LATE_CANCEL_HOURS * 3600 * 1000;
+  if (cancelledByPatient && Date.now() >= lateThreshold) {
+    const penalty = await recordStrike(existing.user_id, 'late_cancel');
+    return res.json({ ...data, penalty });
+  }
   res.json(data);
 });
 
@@ -229,6 +252,37 @@ router.patch('/:id/complete', requireAuth, requireRole('doctor'), async (req, re
 
   if (error) return res.status(500).json({ error: 'Failed to complete appointment' });
   res.json(data);
+});
+
+// PATCH /api/appointments/:id/no-show — doctor marks a past visit as missed.
+// Strikes the patient immediately rather than waiting for the 24h auto-job.
+router.patch('/:id/no-show', requireAuth, requireRole('doctor'), async (req, res) => {
+  const { data: existing } = await supabaseAdmin
+    .from('appointments')
+    .select('doctor_id, user_id, status, time_slot')
+    .eq('id', req.params.id)
+    .single();
+
+  if (!existing) return res.status(404).json({ error: 'Appointment not found' });
+  if (existing.doctor_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
+  if (existing.status !== 'confirmed') {
+    return res.status(400).json({ error: 'Only confirmed appointments can be marked as missed' });
+  }
+  if (new Date(existing.time_slot) > new Date()) {
+    return res.status(400).json({ error: 'This appointment has not taken place yet' });
+  }
+
+  const { data, error } = await supabaseAdmin
+    .from('appointments')
+    .update({ status: 'no_show' })
+    .eq('id', req.params.id)
+    .eq('status', 'confirmed')
+    .select()
+    .single();
+
+  if (error) return res.status(500).json({ error: 'Failed to mark as missed' });
+  const penalty = await recordStrike(existing.user_id, 'no_show');
+  res.json({ ...data, penalty });
 });
 
 // GET /api/appointments/:id/call — the video room, for the two participants only.

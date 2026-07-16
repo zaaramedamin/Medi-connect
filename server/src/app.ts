@@ -14,8 +14,10 @@ import articleRoutes from './routes/articles';
 import orderRoutes from './routes/orders';
 import profileRoutes from './routes/profile';
 import recordRoutes from './routes/records';
+import patientLimitRoutes from './routes/patientLimits';
 import assistantRoutes from './routes/assistant';
 import { processReminders } from './services/reminderService';
+import { processNoShows } from './services/patientLimits';
 
 const app = express();
 
@@ -71,6 +73,7 @@ app.use('/api/articles', articleRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/records', recordRoutes);
+app.use('/api/patient-limits', patientLimitRoutes);
 app.use('/api/assistant', assistantRateLimit, assistantRoutes);
 
 // Health check — enough for an uptime monitor to alert on and to confirm which
@@ -94,6 +97,7 @@ app.post('/api/jobs/reminders', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   await processReminders();
+  await processNoShows();
   res.json({ status: 'ok' });
 });
 
@@ -116,10 +120,12 @@ const PORT = process.env.PORT ?? 3000;
 app.listen(PORT, () => {
   logger.info('API started', { port: Number(PORT), version: process.env.npm_package_version ?? 'dev' });
 
-  // Appointment reminders: check once on boot, then every 15 minutes.
-  // No-ops until a real RESEND_API_KEY is set. Deduped via reminder_logs.
-  processReminders();
-  setInterval(processReminders, 15 * 60 * 1000);
+  // Background jobs: check once on boot, then every 15 minutes. Reminders no-op
+  // until RESEND_API_KEY is set; no-show detection always runs (ungated by email)
+  // and is idempotent (it only flips a still-confirmed row once).
+  const runJobs = () => { processReminders(); processNoShows(); };
+  runJobs();
+  setInterval(runJobs, 15 * 60 * 1000);
 });
 
 export default app;

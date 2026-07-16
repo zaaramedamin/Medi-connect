@@ -297,6 +297,19 @@ export default function DoctorProfile() {
         setConfirmOpen(false);
         toast.error(t('Add your details before booking'));
         navigate('/settings', { state: { from: `/doctor/${id}` } });
+        return;
+      }
+      // Blocked for missing too many appointments.
+      if (err instanceof ApiError && (err.code === 'BANNED' || err.code === 'BLACKLISTED')) {
+        setConfirmOpen(false);
+        const until = err.details?.until as string | undefined;
+        toast.error(
+          err.code === 'BLACKLISTED'
+            ? t('Your account is blacklisted from booking.')
+            : until
+              ? t('You’re temporarily banned from booking until {date}.', { date: `${formatDate(until)} ${formatTime(until)}` })
+              : t('You’re temporarily banned from booking.'),
+        );
       }
     },
   });

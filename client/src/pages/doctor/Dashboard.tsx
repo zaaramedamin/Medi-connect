@@ -3,13 +3,14 @@ import { useForm, useFieldArray } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useState, useRef, useEffect } from 'react';
-import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2, Building2, Plus, X, Contact, FolderOpenDot, FileText, ChevronRight, Video } from 'lucide-react';
+import { User, CalendarDays, Save, Trash2, Upload, CheckCircle2, Building2, Plus, X, Contact, FolderOpenDot, FileText, ChevronRight, Video, ShieldCheck, UserX } from 'lucide-react';
+import { PenaltyFlag } from '@/components/features/PenaltyFlag';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { getDoctor, getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment, getMyPatients } from '@/services/api';
+import { getDoctor, getDoctorAppointments, updateDoctorProfile, uploadPhoto, deleteDoctorAccount, completeAppointment, getMyPatients, markNoShow, liftPatientBan } from '@/services/api';
 import { useAuthStore } from '@/stores/authStore';
 import { useT } from '@/i18n';
 import { cn, formatDate, formatTime, initialsOf } from '@/lib/utils';
@@ -136,6 +137,35 @@ export default function DoctorDashboard() {
     });
     if (ok) completeMutation.mutate(id);
   };
+
+  const noShowMutation = useMutation({
+    mutationFn: markNoShow,
+    onSuccess: () => {
+      toast.success(t('Marked as missed. The patient has been flagged.'));
+      queryClient.invalidateQueries({ queryKey: ['appointments', 'doctor'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
+
+  const confirmNoShow = async (id: number, patient: string) => {
+    const ok = await askConfirm({
+      title: t('Mark this patient as a no-show?'),
+      detail: patient,
+      description: t('This counts as a missed appointment against the patient. Two misses lead to a temporary ban. This cannot be undone.'),
+      variant: 'destructive',
+      confirmLabel: t('Confirm no-show'),
+    });
+    if (ok) noShowMutation.mutate(id);
+  };
+
+  const liftBanMutation = useMutation({
+    mutationFn: liftPatientBan,
+    onSuccess: () => {
+      toast.success(t('Ban lifted. The patient can book again.'));
+      queryClient.invalidateQueries({ queryKey: ['appointments', 'doctor'] });
+    },
+    onError: (e: Error) => toast.error(e.message),
+  });
 
   const profileMutation = useMutation({
     mutationFn: async (data: ProfileForm) => {
@@ -406,7 +436,10 @@ export default function DoctorDashboard() {
                     return (
                       <tr key={apt.id} className="hover:bg-muted/20 transition-colors">
                         <td className="px-4 py-3">
-                          <p className="font-medium">{apt.patient_name}</p>
+                          <div className="flex items-center gap-1.5">
+                            <p className="font-medium">{apt.patient_name}</p>
+                            <PenaltyFlag penalty={apt.patient_penalty} />
+                          </div>
                           <p className="text-xs text-muted-foreground">{apt.patient_email}</p>
                         </td>
                         <td className="px-4 py-3">{formatDate(apt.time_slot)}</td>
@@ -414,10 +447,10 @@ export default function DoctorDashboard() {
                         <td className="px-4 py-3 capitalize">{t(apt.payment_method)}</td>
                         <td className="px-4 py-3">
                           <Badge
-                            variant={apt.status === 'confirmed' ? 'success' : apt.status === 'cancelled' ? 'destructive' : 'secondary'}
+                            variant={apt.status === 'confirmed' ? 'success' : apt.status === 'cancelled' || apt.status === 'no_show' ? 'destructive' : 'secondary'}
                             className="capitalize"
                           >
-                            {t(apt.status)}
+                            {t(apt.status === 'no_show' ? 'missed' : apt.status)}
                           </Badge>
                         </td>
                         <td className="px-4 py-3">
@@ -427,14 +460,32 @@ export default function DoctorDashboard() {
                                 <Link to={`/call/${apt.id}`}><Video className="h-4 w-4 mr-1.5" /> {t('Join call')}</Link>
                               </Button>
                             )}
-                            {canComplete && (
+                            {apt.patient_penalty?.is_banned && (
                               <Button
                                 size="sm" variant="outline"
-                                onClick={() => confirmComplete(apt.id, apt.patient_name)}
-                                disabled={completeMutation.isPending}
+                                onClick={() => liftBanMutation.mutate(apt.user_id)}
+                                disabled={liftBanMutation.isPending}
                               >
-                                <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t('Mark completed')}
+                                <ShieldCheck className="h-4 w-4 mr-1.5" /> {t('Lift ban')}
                               </Button>
+                            )}
+                            {canComplete && (
+                              <>
+                                <Button
+                                  size="sm" variant="outline"
+                                  onClick={() => confirmComplete(apt.id, apt.patient_name)}
+                                  disabled={completeMutation.isPending}
+                                >
+                                  <CheckCircle2 className="h-4 w-4 mr-1.5" /> {t('Mark completed')}
+                                </Button>
+                                <Button
+                                  size="sm" variant="ghost" className="text-destructive hover:text-destructive"
+                                  onClick={() => confirmNoShow(apt.id, apt.patient_name)}
+                                  disabled={noShowMutation.isPending}
+                                >
+                                  <UserX className="h-4 w-4 mr-1.5" /> {t('No-show')}
+                                </Button>
+                              </>
                             )}
                             <Button asChild size="sm" variant="ghost">
                               <Link to={`/records/patient/${apt.user_id}`}>

@@ -53,12 +53,33 @@ export interface Appointment {
   doctor_id: string;
   user_id: string;
   time_slot: string;
-  status: 'confirmed' | 'cancelled' | 'completed';
+  status: 'confirmed' | 'cancelled' | 'completed' | 'no_show';
   payment_method: 'cash' | 'online';
   payment_status: 'pending' | 'paid';
   mode?: ConsultationMode;
   created_at: string;
   doctors?: Pick<Doctor, 'id' | 'name' | 'specialty' | 'location' | 'photos_url'>;
+}
+
+/** A patient's reliability record — no-shows, temp bans, blacklist. */
+export interface PatientPenalty {
+  patient_id?: string;
+  missed_count?: number;
+  total_missed: number;
+  ban_count?: number;
+  banned_until: string | null;
+  blacklisted: boolean;
+  is_banned: boolean;
+  last_reason?: 'no_show' | 'late_cancel' | null;
+}
+
+/** Compact penalty summary attached to a doctor's appointment rows / admin patient list. */
+export interface PenaltySummary {
+  total_missed: number;
+  ban_count?: number;
+  is_banned: boolean;
+  blacklisted: boolean;
+  banned_until: string | null;
 }
 
 /** The video room details for one appointment's two participants. */
@@ -351,6 +372,7 @@ export interface AdminPatient {
   email: string;
   created_at: string;
   appointments: number;
+  penalty: PenaltySummary | null;
 }
 
 // ── RAG admin console ────────────────────────────────────────────────

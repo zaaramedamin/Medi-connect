@@ -501,6 +501,40 @@ const BASE: Record<string, string> = {
   'Date of birth is required': 'La date de naissance est obligatoire',
   'Date of birth cannot be in the future': 'La date de naissance ne peut pas être dans le futur',
 
+  // ── Patient reliability limits ───────────────────────────────────
+  'missed': 'manqué',
+  'No-show': 'Absence',
+  'Lift ban': 'Lever le blocage',
+  'Blacklisted': 'Sur liste noire',
+  'Banned': 'Bloqué',
+  'Missed {n}': '{n} absence(s)',
+  '{n} missed appointment(s)': '{n} rendez-vous manqué(s)',
+  'Mark this patient as a no-show?': 'Marquer ce patient comme absent ?',
+  'This counts as a missed appointment against the patient. Two misses lead to a temporary ban. This cannot be undone.':
+    'Cela compte comme un rendez-vous manqué pour le patient. Deux absences entraînent un blocage temporaire. Cette action est irréversible.',
+  'Confirm no-show': 'Confirmer l’absence',
+  'Marked as missed. The patient has been flagged.': 'Marqué comme absent. Le patient a été signalé.',
+  'Ban lifted. The patient can book again.': 'Blocage levé. Le patient peut de nouveau réserver.',
+  'Remove blacklist': 'Retirer de la liste noire',
+  'Remove blacklist for {name}?': 'Retirer {name} de la liste noire ?',
+  'They will be able to book again. Their miss history is reset.':
+    'Il pourra de nouveau réserver. Son historique d’absences est réinitialisé.',
+  'Blacklist removed.': 'Retiré de la liste noire.',
+  'Your account is blacklisted': 'Votre compte est sur liste noire',
+  'You can no longer book appointments after repeated missed visits. Contact support if you think this is a mistake.':
+    'Vous ne pouvez plus réserver après des absences répétées. Contactez le support si vous pensez qu’il s’agit d’une erreur.',
+  'Booking temporarily suspended': 'Réservation temporairement suspendue',
+  'You missed appointments, so you can’t book until {date}.':
+    'Vous avez manqué des rendez-vous : vous ne pouvez pas réserver avant le {date}.',
+  'You missed appointments and are temporarily blocked from booking.':
+    'Vous avez manqué des rendez-vous et êtes temporairement bloqué pour réserver.',
+  'Please don’t miss appointments': 'Merci de ne pas manquer vos rendez-vous',
+  'You have missed {n} appointment(s). Cancel at least 2 hours ahead if you can’t attend — a second miss leads to a temporary booking ban.':
+    'Vous avez manqué {n} rendez-vous. Annulez au moins 2 heures à l’avance si vous ne pouvez pas venir — une deuxième absence entraîne un blocage temporaire.',
+  'Your account is blacklisted from booking.': 'Votre compte est sur liste noire et ne peut pas réserver.',
+  'You’re temporarily banned from booking until {date}.': 'Vous êtes temporairement bloqué pour réserver jusqu’au {date}.',
+  'You’re temporarily banned from booking.': 'Vous êtes temporairement bloqué pour réserver.',
+
   // ── Telemedicine (video consultations) ───────────────────────────
   'Consultation type': 'Type de consultation',
   'In person': 'En personne',

@@ -4,6 +4,7 @@ import { supabaseAdmin } from '../config/supabase';
 import { requireAuth, requireRole } from '../middleware/auth';
 import { validate } from '../middleware/validate';
 import { reindexDoctor } from '../services/embeddings';
+import { getPenalties } from '../services/patientLimits';
 import ragRouter from './adminRag';
 
 const router = Router();
@@ -272,15 +273,27 @@ router.get('/patients', async (_req, res) => {
   const bookings = new Map<string, number>();
   for (const a of appts ?? []) bookings.set(a.user_id, (bookings.get(a.user_id) ?? 0) + 1);
 
-  const patients = (usersRes.data?.users ?? [])
-    .filter(u => (u.user_metadata?.role ?? 'patient') === 'patient')
-    .map(u => ({
-      id: u.id,
-      name: (u.user_metadata?.name as string) ?? u.email ?? 'Patient',
-      email: u.email ?? '',
-      created_at: u.created_at,
-      appointments: bookings.get(u.id) ?? 0,
-    }))
+  // Role lives in app_metadata (service-role-only) since the auth hardening;
+  // user_metadata.role was stripped, so filtering on it would list everyone.
+  const patientUsers = (usersRes.data?.users ?? [])
+    .filter(u => (u.app_metadata?.role ?? 'patient') === 'patient');
+
+  const penalties = await getPenalties(patientUsers.map(u => u.id));
+
+  const patients = patientUsers
+    .map(u => {
+      const p = penalties.get(u.id);
+      return {
+        id: u.id,
+        name: (u.user_metadata?.name as string) ?? u.email ?? 'Patient',
+        email: u.email ?? '',
+        created_at: u.created_at,
+        appointments: bookings.get(u.id) ?? 0,
+        penalty: p
+          ? { total_missed: p.total_missed, ban_count: p.ban_count, is_banned: p.is_banned, blacklisted: p.blacklisted, banned_until: p.banned_until }
+          : null,
+      };
+    })
     .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 
   res.json(patients);

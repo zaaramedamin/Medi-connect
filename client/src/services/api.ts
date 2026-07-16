@@ -7,7 +7,7 @@ import type {
   RagParam, RagLogRow, RagStats,
   DoctorPatient, PatientFile, PatientChart, PatientChartInput,
   Consultation, ConsultationInput, DocumentType, MedicalDocument, DocumentSummary,
-  DocumentVerification,
+  DocumentVerification, PatientPenalty, PenaltySummary,
 } from '@/types';
 
 // In dev this is empty and Vite proxies /api → localhost. In production set
@@ -104,8 +104,30 @@ export const getCallRoom = (appointmentId: number) =>
 export const getMyAppointments = () =>
   apiFetch<Appointment[]>('/api/appointments/my');
 
+export type DoctorAppointment = Appointment & {
+  patient_name: string;
+  patient_email: string;
+  patient_penalty: PenaltySummary | null;
+};
+
 export const getDoctorAppointments = () =>
-  apiFetch<(Appointment & { patient_name: string; patient_email: string })[]>('/api/appointments/doctor');
+  apiFetch<DoctorAppointment[]>('/api/appointments/doctor');
+
+export const markNoShow = (id: number) =>
+  apiFetch<Appointment>(`/api/appointments/${id}/no-show`, { method: 'PATCH' });
+
+// Patient reliability limits
+export const getMyPenalty = () =>
+  apiFetch<PatientPenalty>('/api/patient-limits/me');
+
+export const getPatientPenalty = (patientId: string) =>
+  apiFetch<PatientPenalty>(`/api/patient-limits/${patientId}`);
+
+export const liftPatientBan = (patientId: string) =>
+  apiFetch<PatientPenalty>(`/api/patient-limits/${patientId}/lift-ban`, { method: 'POST' });
+
+export const removePatientBlacklist = (patientId: string) =>
+  apiFetch<PatientPenalty>(`/api/patient-limits/${patientId}/remove-blacklist`, { method: 'POST' });
 
 export const cancelAppointment = (id: number) =>
   apiFetch<Appointment>(`/api/appointments/${id}/cancel`, { method: 'PATCH' });
