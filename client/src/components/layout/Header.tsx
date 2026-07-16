@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { label: 'Shop', href: '/shop' },
   { label: 'Insights', href: '/community' },
   { label: 'Why us', href: '/why-mediconnect' },
+
 ] as const;
 
 const NAV_LINK_CLASS =

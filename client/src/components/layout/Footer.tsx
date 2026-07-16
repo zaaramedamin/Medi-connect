@@ -51,7 +51,7 @@ export function Footer() {
             </p>
             <div className="flex gap-2">
               <a
-                href="https://github.com"
+                href="https://github.com/zaaramedamin/Medi-connect"
                 target="_blank"
                 rel="noreferrer"
                 aria-label="GitHub"
@@ -120,7 +120,7 @@ export function Footer() {
 
       <div className="border-t">
         <div className="container py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} MediConnect. Built by Zaara Med Amin &amp; Dhia Zorai.</p>
+          <p>© {new Date().getFullYear()} MediConnect. Built by Zaara Med Amin</p>
           <nav className="flex gap-5" aria-label="Legal">
             <a href="#" className="transition-colors hover:text-primary">{t('Privacy')}</a>
             <a href="#" className="transition-colors hover:text-primary">{t('Terms')}</a>
