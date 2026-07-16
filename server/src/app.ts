@@ -37,17 +37,22 @@ app.use(
   })
 );
 
-// CORS — allow the React dev server and the production client origin
-const allowedOrigins = [
-  'http://localhost:5173',
-  process.env.CLIENT_ORIGIN ?? '',
-].filter(Boolean);
+// CORS — allow the production client origin plus any localhost/127.0.0.1 dev
+// origin (the Vite port can vary, and localhost vs 127.0.0.1 are distinct
+// origins to a browser, which is what was causing PUTs to be rejected).
+const allowedOrigins = [process.env.CLIENT_ORIGIN ?? ''].filter(Boolean);
+const isLocalhost = (origin: string) =>
+  /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
 app.use(
   cors({
     origin: (origin, cb) => {
-      // Allow requests with no origin (curl, Postman)
-      if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+      // No origin = curl/Postman/same-origin. Otherwise allow any localhost dev
+      // origin or the configured production origin.
+      if (!origin || isLocalhost(origin) || allowedOrigins.includes(origin)) {
+        return cb(null, true);
+      }
+      logger.warn('CORS rejected', { origin, allowedOrigins });
       cb(new Error('Not allowed by CORS'));
     },
     credentials: true,

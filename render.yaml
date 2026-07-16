@@ -1,9 +1,10 @@
-# MediConnect — Render Blueprint (v2 monorepo)
-# Deploys two services: the Express API (web) and the React client (static site).
-# After the first deploy, fill in the "sync: false" values in the Render dashboard.
+# MediConnect — Render Blueprint
+#
+# Deploys the Express API as a Node web service. The React client is deployed
+# separately on Vercel (see client/vercel.json and the README). After the first
+# deploy, fill in the "sync: false" secrets in the Render dashboard.
 
 services:
-  # ── Express API ──────────────────────────────────────────────────────
   - type: web
     name: mediconnect-api
     runtime: node
@@ -11,41 +12,25 @@ services:
     rootDir: .
     buildCommand: npm install && npm run build --workspace=server
     startCommand: npm run start --workspace=server
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
       - key: SUPABASE_URL
         sync: false            # https://<project>.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
-        sync: false            # service_role secret key
+        sync: false            # service_role secret key (server-only)
       - key: SUPABASE_BUCKET
         value: doctor-photos
+      - key: CLIENT_ORIGIN
+        sync: false            # the Vercel client URL, e.g. https://mediconnect.vercel.app
       - key: RESEND_API_KEY
         sync: false            # optional — leave blank to disable emails
       - key: SENDER_EMAIL
-        sync: false            # e.g. noreply@yourdomain.com
-      - key: CLIENT_ORIGIN
-        sync: false            # the static site URL, e.g. https://mediconnect.onrender.com
+        sync: false            # e.g. onboarding@resend.dev
+      - key: HF_TOKEN
+        sync: false            # optional — enables the RAG assistant
       - key: JOB_TOKEN
         generateValue: true    # secret for POST /api/jobs/reminders (external cron)
-
-  # ── React client (static) ────────────────────────────────────────────
-  - type: web
-    name: mediconnect-client
-    runtime: static
-    plan: free
-    rootDir: .
-    buildCommand: npm install && npm run build --workspace=client
-    staticPublishPath: ./client/dist
-    # SPA fallback so client-side routes (e.g. /doctor/:id) resolve to index.html
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
-    envVars:
-      - key: VITE_SUPABASE_URL
-        sync: false            # same as SUPABASE_URL above
-      - key: VITE_SUPABASE_ANON_KEY
-        sync: false            # anon/public key (safe in browser)
-      - key: VITE_API_URL
-        sync: false            # the API URL, e.g. https://mediconnect-api.onrender.com
+      - key: CALL_SECRET
+        generateValue: true    # HMAC secret for video-room names
