@@ -39,8 +39,11 @@ app.use(
 
 // CORS — allow the production client origin plus any localhost/127.0.0.1 dev
 // origin (the Vite port can vary, and localhost vs 127.0.0.1 are distinct
-// origins to a browser, which is what was causing PUTs to be rejected).
-const allowedOrigins = [process.env.CLIENT_ORIGIN ?? ''].filter(Boolean);
+// origins to a browser). A browser's Origin header never has a trailing slash,
+// so we strip one off CLIENT_ORIGIN too — that trailing slash is an easy
+// deploy-time mistake that would otherwise silently reject every request.
+const stripSlash = (s: string) => s.replace(/\/+$/, '');
+const allowedOrigins = [process.env.CLIENT_ORIGIN ?? ''].map(stripSlash).filter(Boolean);
 const isLocalhost = (origin: string) =>
   /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin);
 
@@ -49,7 +52,7 @@ app.use(
     origin: (origin, cb) => {
       // No origin = curl/Postman/same-origin. Otherwise allow any localhost dev
       // origin or the configured production origin.
-      if (!origin || isLocalhost(origin) || allowedOrigins.includes(origin)) {
+      if (!origin || isLocalhost(origin) || allowedOrigins.includes(stripSlash(origin))) {
         return cb(null, true);
       }
       logger.warn('CORS rejected', { origin, allowedOrigins });
