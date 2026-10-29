@@ -15,8 +15,8 @@ const router = Router();
 // public, so this never rejects) — used for the admin console's request log.
 router.use(attachUserOptional);
 
-// Only cite a source when retrieval was reasonably confident. e5 similarity
-// sits in a narrow high band (relevant matches ~0.87+, off-topic ~0.82), so
+// Only cite a source when retrieval was reasonably confident. Gemini similarity
+// separates cleanly (relevant matches ~0.67-0.78, off-topic ~0.56-0.67), so
 // this bar keeps citations off a soft-refusal answer without gating the answer
 // itself — that's the grounding prompt's job. Runtime-editable (cite_min_similarity).
 

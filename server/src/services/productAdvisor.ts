@@ -1,4 +1,4 @@
-import { getHfClient, withHfRetry } from './hfClient';
+import { chatCompletion, withRetry } from './gemini';
 import { supabaseAdmin } from '../config/supabase';
 import { embedQuery } from './embeddings';
 import { getConfig } from './ragConfig';
@@ -63,9 +63,8 @@ export async function adviseProducts(question: string): Promise<ProductAdvice> {
     '- End with a one-line note that this is shopping help, not medical advice.',
   ].join('\n');
 
-  const hf = getHfClient();
-  const completion = await withHfRetry(() =>
-    hf.chatCompletion({
+  const completion = await withRetry(() =>
+    chatCompletion({
       model: String(cfg.chat_model),
       messages: [
         { role: 'system', content: system },

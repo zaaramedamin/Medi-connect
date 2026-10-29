@@ -30,8 +30,8 @@ services:
         sync: false            # optional — leave blank to disable emails
       - key: SENDER_EMAIL
         sync: false            # e.g. onboarding@resend.dev
-      - key: HF_TOKEN
-        sync: false            # optional — enables the RAG assistant
+      - key: GEMINI_API_KEY
+        sync: false            # optional — enables the RAG assistant (free key: aistudio.google.com/apikey)
       - key: JOB_TOKEN
         generateValue: true    # secret for POST /api/jobs/reminders (external cron)
       - key: CALL_SECRET

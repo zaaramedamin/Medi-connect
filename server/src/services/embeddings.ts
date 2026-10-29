@@ -1,39 +1,33 @@
-import { getHfClient, withHfRetry } from './hfClient';
+import { embedContent, withRetry, type EmbedTask } from './gemini';
 import { supabaseAdmin } from '../config/supabase';
 import { getConfig, EMBEDDING_DIM } from './ragConfig';
 
 // The embedding model and chunk size are runtime-editable from the admin
 // console (services/ragConfig.ts). The output dimension (EMBEDDING_DIM = 384)
-// stays locked to the article_chunks.embedding VECTOR(384) column — switching
-// to a model with a different dimension means migrating that column AND
-// re-embedding the whole corpus, so the console flags it as re-ingest-only.
+// stays locked to the article_chunks.embedding VECTOR(384) column — Gemini
+// embeddings are requested at 384 dimensions, and switching to a model that
+// can't produce that means migrating the column AND re-embedding the whole
+// corpus, so the console flags it as re-ingest-only.
 export { EMBEDDING_DIM };
 
-// E5 models require a task prefix on the input: "passage: " for stored
-// documents and "query: " for the user's question. Skipping it measurably
-// hurts retrieval quality — do not remove the prefixes.
-async function embed(input: string): Promise<number[]> {
-  const hf = getHfClient();
+// Gemini distinguishes stored documents from search queries with a task type
+// (instead of the text prefixes e5 models needed). Use the matching one on each
+// side — mixing them measurably hurts retrieval quality.
+async function embed(input: string, task: EmbedTask): Promise<number[]> {
   const cfg = await getConfig();
-  const output = await withHfRetry(() =>
-    hf.featureExtraction({
-      model: String(cfg.embedding_model),
-      inputs: input,
-      provider: 'hf-inference',
-    })
+  // Retry harder than chat: the free tier allows ~100 embeds/min, and bulk
+  // ingestion can brush against it.
+  return withRetry(
+    () => embedContent(String(cfg.embedding_model), input, task, EMBEDDING_DIM),
+    5
   );
-  // A single string input yields one flat vector (number[]).
-  if (!Array.isArray(output) || typeof output[0] !== 'number') {
-    throw new Error('Unexpected embedding shape returned by Hugging Face.');
-  }
-  return output as number[];
 }
 
 /** Embed a document chunk for storage (ingestion side). */
-export const embedPassage = (text: string): Promise<number[]> => embed(`passage: ${text}`);
+export const embedPassage = (text: string): Promise<number[]> => embed(text, 'RETRIEVAL_DOCUMENT');
 
 /** Embed a user question for retrieval (query side). */
-export const embedQuery = (text: string): Promise<number[]> => embed(`query: ${text}`);
+export const embedQuery = (text: string): Promise<number[]> => embed(text, 'RETRIEVAL_QUERY');
 
 // Fallback chunk size if config can't be read (matches the ragConfig default).
 const DEFAULT_MAX_CHUNK_WORDS = 400;
