@@ -1,4 +1,5 @@
 import { supabaseAdmin } from '../config/supabase';
+import { DEFAULT_CHAT_MODEL, DEFAULT_EMBEDDING_MODEL } from './gemini';
 
 /**
  * Central registry of every tunable RAG parameter. Defaults live here in code;
@@ -35,11 +36,8 @@ export const PARAMS: ParamDef[] = [
     group: 'models',
     type: 'enum',
     freeText: true,
-    options: [
-      'intfloat/multilingual-e5-small',
-      'sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2',
-    ],
-    default: 'intfloat/multilingual-e5-small',
+    options: [DEFAULT_EMBEDDING_MODEL],
+    default: DEFAULT_EMBEDDING_MODEL,
     requiresReingest: true,
     description:
       'Turns text into vectors. Changing it ONLY affects future ingests and needs a full re-embed (npm run ingest). A model with a different dimension than ' +
@@ -52,9 +50,9 @@ export const PARAMS: ParamDef[] = [
     group: 'models',
     type: 'enum',
     freeText: true,
-    options: ['Qwen/Qwen2.5-7B-Instruct', 'mistralai/Mistral-7B-Instruct-v0.3'],
-    default: process.env.HF_CHAT_MODEL || 'Qwen/Qwen2.5-7B-Instruct',
-    description: 'The LLM that writes the final answer. Safe to change live.',
+    options: ['gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'],
+    default: process.env.GEMINI_CHAT_MODEL || DEFAULT_CHAT_MODEL,
+    description: 'The Gemini model that writes the final answer. Safe to change live.',
   },
 
   // ── Chunking (ingestion) ────────────────────────────────────────────
@@ -89,7 +87,7 @@ export const PARAMS: ParamDef[] = [
     label: 'Answer floor (min top similarity)',
     group: 'retrieval',
     type: 'number',
-    default: 0.78,
+    default: 0.65,
     min: 0,
     max: 1,
     step: 0.01,
@@ -101,7 +99,7 @@ export const PARAMS: ParamDef[] = [
     label: 'Citation floor',
     group: 'retrieval',
     type: 'number',
-    default: 0.84,
+    default: 0.69,
     min: 0,
     max: 1,
     step: 0.01,
@@ -171,7 +169,7 @@ export const PARAMS: ParamDef[] = [
     label: 'Advisor similarity floor',
     group: 'advisor',
     type: 'number',
-    default: 0.75,
+    default: 0.64,
     min: 0,
     max: 1,
     step: 0.01,

@@ -59,7 +59,7 @@ The codebase treats security as a first-class concern — role checks derive fro
 | **Auth** | Supabase Auth (JWT; roles in `app_metadata`) |
 | **Database** | Supabase (PostgreSQL) with Row-Level Security + `pgvector` |
 | **Storage** | Supabase Storage (profile photos) |
-| **AI / RAG** | Hugging Face Inference (embeddings + generation), pgvector similarity search |
+| **AI / RAG** | Google Gemini (embeddings + generation), pgvector similarity search |
 | **Email** | Resend |
 | **Video** | Jitsi (embedded, no account required) |
 | **Tests** | Jest (server), Vitest + Testing Library (client) |
@@ -87,7 +87,7 @@ Medi-Connect-platform/
 
 - Node.js **20+** (see `.nvmrc`)
 - A free [Supabase](https://supabase.com) project
-- Optional: [Resend](https://resend.com) key for emails, [Hugging Face](https://huggingface.co) token for the AI assistant
+- Optional: [Resend](https://resend.com) key for emails, free [Gemini API](https://aistudio.google.com/apikey) key for the AI assistant
 
 ### 1. Database (Supabase)
 
@@ -170,8 +170,8 @@ The client deploys to **Vercel** (static SPA) and the API to **Render** (Node we
 | `PORT` | – | API port (default `3001`) |
 | `RESEND_API_KEY` | – | Enables confirmation & reminder emails; omit to disable |
 | `SENDER_EMAIL` | – | From-address for emails (e.g. `onboarding@resend.dev`) |
-| `HF_TOKEN` | – | Hugging Face token for the RAG assistant |
-| `HF_CHAT_MODEL` | – | Override the generation model |
+| `GEMINI_API_KEY` | – | Google AI Studio key for the RAG assistant (embeddings + answers) |
+| `GEMINI_CHAT_MODEL` | – | Override the generation model (default `gemini-3.1-flash-lite`) |
 | `JOB_TOKEN` | – | Secret for the external-cron reminder hook |
 | `JITSI_DOMAIN` | – | Video server (default `meet.jit.si`) |
 | `CALL_SECRET` | – | HMAC secret for deriving video-room names |

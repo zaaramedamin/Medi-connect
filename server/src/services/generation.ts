@@ -1,4 +1,4 @@
-import { getHfClient, withHfRetry } from './hfClient';
+import { chatCompletion, withRetry } from './gemini';
 import { retrieveChunks, type RetrievedChunk } from './retrieval';
 import { getConfig } from './ragConfig';
 
@@ -7,7 +7,7 @@ import { getConfig } from './ragConfig';
 // they're read from getConfig() per request. See services/ragConfig.ts for the
 // defaults and the rationale that used to live in these constants:
 //   - min_top_similarity: below it, refuse WITHOUT an LLM call. Deliberately
-//     low because e5 scores sit in a narrow high band; the real guardrail is
+//     low because relevant and off-topic scores overlap near 0.67; the real guardrail is
 //     the grounding prompt, which refuses when the context doesn't answer.
 //   - context_chunks: how many retrieved chunks are fed to the model.
 
@@ -73,15 +73,14 @@ export async function answerQuestion(
   const lang = opts.lang ?? null;
   const mode: AssistantMode = opts.mode ?? 'articles';
   const refusalLang: 'en' | 'fr' = lang ?? 'en';
-  const hf = getHfClient();
   const cfg = await getConfig();
   const chatModel = String(cfg.chat_model);
   const maxTokens = Number(cfg.answer_max_tokens);
 
   // General mode: answer from the model's own knowledge, no retrieval, no sources.
   if (mode === 'general') {
-    const completion = await withHfRetry(() =>
-      hf.chatCompletion({
+    const completion = await withRetry(() =>
+      chatCompletion({
         model: chatModel,
         messages: [
           { role: 'system', content: GENERAL_SYSTEM },
@@ -108,8 +107,8 @@ export async function answerQuestion(
 
   // Guardrail 2: the grounding prompt. The model answers only from context and
   // refuses on its own when the retrieved passages don't address the question.
-  const completion = await withHfRetry(() =>
-    hf.chatCompletion({
+  const completion = await withRetry(() =>
+    chatCompletion({
       model: chatModel,
       messages: buildMessages(question, chunks),
       max_tokens: maxTokens,
