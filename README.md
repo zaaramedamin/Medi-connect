@@ -18,6 +18,47 @@ The codebase treats security as a first-class concern — role checks derive fro
 
 ---
 
+## Demo
+
+<div align="center">
+  <video src="https://github.com/zaaramedamin/Medi-connect/raw/main/docs/demo.mp4" controls muted width="100%"></video>
+</div>
+
+> A 2-minute walkthrough: doctor search and map, booking, the AI health assistant, a doctor's clinical file, the admin AI console, and public document verification. If the player does not load, [open the video directly](docs/demo.mp4).
+
+---
+
+## Screenshots
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/home.png" alt="Home page"><br><sub><b>Home</b> — landing page and doctor search</sub></td>
+    <td width="50%"><img src="docs/screenshots/doctors-map.png" alt="Doctor discovery map"><br><sub><b>Doctor discovery</b> — search and interactive map</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/booking.png" alt="Appointment booking"><br><sub><b>Booking</b> — real-time slots, in-person or video visit</sub></td>
+    <td width="50%"><img src="docs/screenshots/community.png" alt="Doctor insights and advice"><br><sub><b>Insights</b> — articles written by doctors, the assistant's knowledge base</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/patient-dashboard.png" alt="Patient dashboard"><br><sub><b>Patient dashboard</b> — appointments and history</sub></td>
+    <td width="50%"><img src="docs/screenshots/doctor-dashboard.png" alt="Doctor dashboard"><br><sub><b>Doctor dashboard</b> — schedule and patients</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/medical-record.png" alt="Patient medical record"><br><sub><b>Clinical records</b> — chart and consultation log</sub></td>
+    <td width="50%"><img src="docs/screenshots/document.png" alt="Issued medical document"><br><sub><b>Issued documents</b> — print-ready, QR-verifiable (shown here as revoked)</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/ai-assistant.png" alt="AI health assistant"><br><sub><b>AI health assistant</b> — RAG answers with citations</sub></td>
+    <td width="50%"><img src="docs/screenshots/admin-console.png" alt="Admin AI console"><br><sub><b>Admin AI Console</b> — live RAG tuning and logs</sub></td>
+  </tr>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/shop.png" alt="Health products shop"><br><sub><b>Shop</b> — health products and advisor</sub></td>
+    <td width="50%"><img src="docs/screenshots/verify.png" alt="Public document verification"><br><sub><b>Verification</b> — public authenticity check</sub></td>
+  </tr>
+</table>
+
+---
+
 ## Features
 
 **Appointments & scheduling**
